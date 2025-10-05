@@ -1,6 +1,6 @@
 {
     "name": "pagbank-for-woocommerce",
-    "version": "1.2.6",
+    "version": "2.0.0",
     "author": "Elias Júnior <me@eliasjr.dev>",
     "license": "MIT",
     "type": "module",
@@ -8,7 +8,7 @@
     "scripts": {
         "setup": "./scripts/initial-setup.sh",
         "composer": "./scripts/composer.sh",
-        "prebuild": "pnpm composer install --no-dev",
+        "prebuild": "pnpm composer install --no-dev --optimize-autoloader",
         "build": "tsc && vite build",
         "postbuild": "pnpm composer install",
         "dev": "pnpm composer install && tsc && vite build --watch",
