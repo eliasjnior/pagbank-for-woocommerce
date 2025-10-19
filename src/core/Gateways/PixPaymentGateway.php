@@ -261,6 +261,9 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 		wc_get_template(
 			'payment-instructions-pix.php',
 			array(
+				'order_id'            => $order_id,
+				'order_key'           => $order->get_order_key(),
+				'is_paid'             => $order->is_paid(),
 				'pix_expiration_date' => $pix_expiration_date,
 				'pix_text'            => $pix_text,
 				'pix_qr_code'         => $pix_qr_code,
@@ -392,6 +395,14 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 			array(),
 			PAGBANK_WOOCOMMERCE_VERSION,
 			true
+		);
+
+		wp_localize_script(
+			'pagbank-order-pix',
+			'pagbankOrderStatus',
+			array(
+				'nonce' => wp_create_nonce( 'wp_rest' ),
+			)
 		);
 	}
 

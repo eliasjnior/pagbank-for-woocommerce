@@ -25,6 +25,7 @@ use PagBank_WooCommerce\Marketplace\WcfmIntegration;
 use PagBank_WooCommerce\Presentation\ConnectAjaxApi;
 use PagBank_WooCommerce\Presentation\Helpers;
 use PagBank_WooCommerce\Presentation\Hooks;
+use PagBank_WooCommerce\Presentation\OrderStatusApi;
 use PagBank_WooCommerce\Presentation\PaymentGateways;
 use PagBank_WooCommerce\Presentation\PaymentGatewaysFields;
 use PagBank_WooCommerce\Presentation\WebhookHandler;
@@ -58,6 +59,7 @@ add_action(
 	Hooks::get_instance();
 	ConnectAjaxApi::get_instance();
 	WebhookHandler::get_instance();
+	OrderStatusApi::get_instance();
 
 	if ( Helpers::is_wcfm_activated() ) {
 		WcfmIntegration::get_instance();
