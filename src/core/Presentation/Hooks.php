@@ -26,6 +26,13 @@ class Hooks {
 	private static $instance = null;
 
 	/**
+	 * Temporary boleto files to cleanup.
+	 *
+	 * @var array
+	 */
+	private $temp_boleto_files = array();
+
+	/**
 	 * Get instance.
 	 */
 	public static function get_instance() {
@@ -55,6 +62,9 @@ class Hooks {
 		);
 		add_action( 'init', array( $this, 'filter_gateways_settings' ) );
 		add_action( 'woocommerce_email_order_details', array( $this, 'add_pix_details_to_email' ), 10, 4 );
+		add_action( 'woocommerce_email_order_details', array( $this, 'add_boleto_details_to_email' ), 10, 4 );
+		add_filter( 'woocommerce_email_attachments', array( $this, 'attach_boleto_pdf_to_email' ), 10, 3 );
+		add_action( 'woocommerce_email_sent', array( $this, 'cleanup_boleto_pdfs_after_email' ), 10, 3 );
 
 		if ( is_admin() ) {
 			add_action( 'admin_notices', array( $this, 'check_for_plugin_dependencies' ) );
@@ -286,5 +296,214 @@ class Hooks {
 				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
 			);
 		}
+	}
+
+	/**
+	 * Add Boleto details to email.
+	 *
+	 * @param WC_Order $order         Order object.
+	 * @param bool     $sent_to_admin Sent to admin.
+	 * @param bool     $plain_text    Plain text.
+	 * @param object   $email         Email object.
+	 *
+	 * @return void
+	 */
+	public function add_boleto_details_to_email( $order, $sent_to_admin, $plain_text, $email ) {
+		// Only add Boleto details to customer emails, not admin emails.
+		if ( $sent_to_admin ) {
+			return;
+		}
+
+		// Only add Boleto details for customer on-hold or processing emails.
+		if ( ! in_array( $email->id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
+			return;
+		}
+
+		// Only add Boleto details for Boleto payment method.
+		if ( $order->get_payment_method() !== 'pagbank_boleto' ) {
+			return;
+		}
+
+		// Don't add Boleto details if order is already paid.
+		if ( $order->is_paid() ) {
+			return;
+		}
+
+		$boleto_expiration_date = $order->get_meta( '_pagbank_boleto_expiration_date' );
+		$boleto_barcode         = $order->get_meta( '_pagbank_boleto_barcode' );
+		$boleto_link_pdf        = $order->get_meta( '_pagbank_boleto_link_pdf' );
+		$boleto_link_png        = $order->get_meta( '_pagbank_boleto_link_png' );
+
+		// Check if we have Boleto data.
+		if ( empty( $boleto_barcode ) || empty( $boleto_link_pdf ) ) {
+			return;
+		}
+
+		if ( $plain_text ) {
+			wc_get_template(
+				'emails/plain/email-boleto-instructions.php',
+				array(
+					'order'                  => $order,
+					'boleto_expiration_date' => $boleto_expiration_date,
+					'boleto_barcode'         => $boleto_barcode,
+					'boleto_link_pdf'        => $boleto_link_pdf,
+					'boleto_link_png'        => $boleto_link_png,
+				),
+				'woocommerce/pagbank/',
+				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
+			);
+		} else {
+			wc_get_template(
+				'emails/email-boleto-instructions.php',
+				array(
+					'order'                  => $order,
+					'boleto_expiration_date' => $boleto_expiration_date,
+					'boleto_barcode'         => $boleto_barcode,
+					'boleto_link_pdf'        => $boleto_link_pdf,
+					'boleto_link_png'        => $boleto_link_png,
+				),
+				'woocommerce/pagbank/',
+				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
+			);
+		}
+	}
+
+	/**
+	 * Attach Boleto PDF to email.
+	 *
+	 * @param array  $attachments Attachments array.
+	 * @param string $email_id    Email ID.
+	 * @param object $order       Order object.
+	 *
+	 * @return array
+	 */
+	public function attach_boleto_pdf_to_email( $attachments, $email_id, $order ) {
+		// Only attach to customer emails.
+		if ( ! in_array( $email_id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
+			return $attachments;
+		}
+
+		// Check if order exists and is a WC_Order.
+		if ( ! $order instanceof WC_Order ) {
+			return $attachments;
+		}
+
+		// Only attach for Boleto payment method.
+		if ( $order->get_payment_method() !== 'pagbank_boleto' ) {
+			return $attachments;
+		}
+
+		// Don't attach if order is already paid.
+		if ( $order->is_paid() ) {
+			return $attachments;
+		}
+
+		$boleto_link_pdf = $order->get_meta( '_pagbank_boleto_link_pdf' );
+
+		// Check if we have the PDF link.
+		if ( empty( $boleto_link_pdf ) ) {
+			return $attachments;
+		}
+
+		// Download the PDF temporarily.
+		$temp_file = $this->download_boleto_pdf( $boleto_link_pdf, $order->get_id() );
+
+		if ( $temp_file && file_exists( $temp_file ) ) {
+			$attachments[] = $temp_file;
+			// Store the file path for cleanup after email is sent.
+			$this->temp_boleto_files[ $order->get_id() ] = $temp_file;
+		}
+
+		return $attachments;
+	}
+
+	/**
+	 * Download Boleto PDF to temporary file.
+	 *
+	 * @param string $pdf_url  PDF URL.
+	 * @param int    $order_id Order ID.
+	 *
+	 * @return string|false Temporary file path or false on failure.
+	 */
+	private function download_boleto_pdf( $pdf_url, $order_id ) {
+		// Create temp directory if it doesn't exist.
+		$upload_dir = wp_upload_dir();
+		$temp_dir   = $upload_dir['basedir'] . '/pagbank-boletos';
+
+		if ( ! file_exists( $temp_dir ) ) {
+			wp_mkdir_p( $temp_dir );
+		}
+
+		// Generate secure random filename to prevent enumeration attacks.
+		$random_hash = wp_generate_password( 32, false, false );
+		$temp_file   = $temp_dir . '/boleto-' . $order_id . '-' . $random_hash . '.pdf';
+
+		// Download the PDF.
+		$response = wp_remote_get(
+			$pdf_url,
+			array(
+				'timeout' => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+
+		$pdf_content = wp_remote_retrieve_body( $response );
+
+		if ( empty( $pdf_content ) ) {
+			return false;
+		}
+
+		// Save to temp file.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		$result = file_put_contents( $temp_file, $pdf_content );
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		return $temp_file;
+	}
+
+	/**
+	 * Cleanup temporary boleto PDFs after email is sent.
+	 *
+	 * @param bool   $sent     Whether email was sent successfully.
+	 * @param string $email_id Email ID.
+	 * @param object $email    Email object.
+	 *
+	 * @return void
+	 */
+	public function cleanup_boleto_pdfs_after_email( $sent, $email_id, $email ) {
+		// Only cleanup for customer emails.
+		if ( ! in_array( $email_id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
+			return;
+		}
+
+		// Get order from email object.
+		if ( ! isset( $email->object ) || ! $email->object instanceof WC_Order ) {
+			return;
+		}
+
+		$order = $email->object;
+
+		// Check if we have a temp file for this order.
+		$order_id = $order->get_id();
+		if ( ! isset( $this->temp_boleto_files[ $order_id ] ) ) {
+			return;
+		}
+
+		$temp_file = $this->temp_boleto_files[ $order_id ];
+
+		// Delete the temporary file.
+		if ( file_exists( $temp_file ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			unlink( $temp_file );
+		}
+
+		// Remove from tracking array.
+		unset( $this->temp_boleto_files[ $order_id ] );
 	}
 }

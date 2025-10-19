@@ -183,11 +183,11 @@ class BoletoPaymentGateway extends WC_Payment_Gateway {
 				return;
 			}
 
-			// Update status to on-hold.
-			$order->update_status( 'on-hold', __( 'Waiting Boleto payment.', 'pagbank-for-woocommerce' ) );
-
 			// Add order details.
 			$this->save_order_meta_data( $order, $response, $data );
+
+			// Update status to on-hold.
+			$order->update_status( 'on-hold', __( 'Waiting Boleto payment.', 'pagbank-for-woocommerce' ) );
 
 			return array(
 				'result'   => 'success',
