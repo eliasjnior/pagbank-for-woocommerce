@@ -12,7 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Carbon\Carbon;
-use WC_Logger;
 use Wilkques\PKCE\Generator;
 use WP_Error;
 
@@ -38,7 +37,7 @@ class Api {
 	/**
 	 * The logger instance.
 	 *
-	 * @var WC_Logger;
+	 * @var \WC_Logger_Interface;
 	 */
 	private $logger;
 
@@ -59,7 +58,7 @@ class Api {
 		$this->connect    = new Connect( $environment );
 		$this->is_sandbox = $environment === 'sandbox';
 		$this->log_id     = $log_id;
-		$this->logger     = new WC_Logger();
+		$this->logger     = wc_get_logger();
 	}
 
 	/**
@@ -130,8 +129,14 @@ class Api {
 			)
 		);
 
-		$this->log( 'OAUTH_URL: ' . $url, 'pagbank_oauth' );
-		$this->log( 'OAUTH CODE VERIFIER: ' . $code_challenge['code_verifier'], 'pagbank_oauth' );
+		$this->log(
+			'OAuth URL generated',
+			'pagbank_oauth',
+			array(
+				'url'           => $url,
+				'code_verifier' => $code_challenge['code_verifier'],
+			)
+		);
 
 		return $url;
 	}
@@ -181,7 +186,7 @@ class Api {
 		);
 
 		if ( defined( 'PAGBANK_LOG_OAUTH_REQUEST' ) && PAGBANK_LOG_OAUTH_REQUEST ) {
-			$this->log_request_begin( $url, $body, 'pagbank_oauth' );
+			$this->log_api_request( $url, $body, 'pagbank_oauth' );
 		}
 
 		$response = $this->request(
@@ -198,7 +203,7 @@ class Api {
 
 		if ( is_wp_error( $response ) ) {
 			if ( defined( 'PAGBANK_LOG_OAUTH_REQUEST' ) && PAGBANK_LOG_OAUTH_REQUEST ) {
-				$this->log_request_error( $response, 'pagbank_oauth' );
+				$this->log_api_request_error( $response, 'pagbank_oauth' );
 			}
 
 			return $response;
@@ -206,10 +211,10 @@ class Api {
 
 		$response_code         = wp_remote_retrieve_response_code( $response );
 		$response_body         = wp_remote_retrieve_body( $response );
-		$decoded_response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$decoded_response_body = json_decode( $response_body, true );
 
 		if ( defined( 'PAGBANK_LOG_OAUTH_REQUEST' ) && PAGBANK_LOG_OAUTH_REQUEST ) {
-			$this->log_request_ends( $response_code, $response_body, 'pagbank_oauth' );
+			$this->log_api_response( $response_code, $response_body, 'pagbank_oauth' );
 		}
 
 		if ( ! $this->is_success_response_code( $response_code ) ) {
@@ -252,7 +257,7 @@ class Api {
 				'refresh_token' => $refresh_token,
 			)
 		);
-		$this->log_request_begin( $url, $body, 'pagbank_oauth' );
+		$this->log_api_request( $url, $body, 'pagbank_oauth' );
 
 		$response = $this->request(
 			$url,
@@ -267,16 +272,16 @@ class Api {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			$this->log_request_error( $response, 'pagbank_oauth' );
+			$this->log_api_request_error( $response, 'pagbank_oauth' );
 
 			return $response;
 		}
 
 		$response_code         = wp_remote_retrieve_response_code( $response );
 		$response_body         = wp_remote_retrieve_body( $response );
-		$decoded_response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$decoded_response_body = json_decode( $response_body, true );
 
-		$this->log_request_ends( $response_code, $response_body, 'pagbank_oauth' );
+		$this->log_api_response( $response_code, $response_body, 'pagbank_oauth' );
 
 		if ( ! $this->is_success_response_code( $response_code ) ) {
 			return new WP_Error( 'pagbank_request_error', __( 'Status HTTP inválido.', 'pagbank-for-woocommerce' ) );
@@ -320,7 +325,7 @@ class Api {
 
 		$body = $this->json_encode( $data );
 
-		$this->log_request_begin( $url, $body );
+		$this->log_api_request( $url, $body );
 
 		$response = $this->request(
 			$url,
@@ -335,16 +340,16 @@ class Api {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			$this->log_request_error( $response );
+			$this->log_api_request_error( $response );
 
 			return $response;
 		}
 
 		$response_code         = wp_remote_retrieve_response_code( $response );
 		$response_body         = wp_remote_retrieve_body( $response );
-		$decoded_response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$decoded_response_body = json_decode( $response_body, true );
 
-		$this->log_request_ends( $response_code, $response_body );
+		$this->log_api_response( $response_code, $response_body );
 
 		if ( 201 !== $response_code ) {
 			return new WP_Error( 'pagbank_order_creation_failed', 'PagBank order creation failed', $decoded_response_body );
@@ -372,7 +377,7 @@ class Api {
 			)
 		);
 
-		$this->log_request_begin( $url, $body );
+		$this->log_api_request( $url, $body );
 
 		$response = $this->request(
 			$url,
@@ -387,16 +392,16 @@ class Api {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			$this->log_request_error( $response );
+			$this->log_api_request_error( $response );
 
 			return $response;
 		}
 
 		$response_code         = wp_remote_retrieve_response_code( $response );
 		$response_body         = wp_remote_retrieve_body( $response );
-		$decoded_response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$decoded_response_body = json_decode( $response_body, true );
 
-		$this->log_request_ends( $response_code, $response_body );
+		$this->log_api_response( $response_code, $response_body );
 
 		if ( 201 !== $response_code ) {
 			return new WP_Error( 'pagbank_charge_refund_failed', 'PagBank charge refund failed', $decoded_response_body );
@@ -434,7 +439,7 @@ class Api {
 			return json_decode( $cached_response, true );
 		}
 
-		$this->log_request_begin( $url, '' );
+		$this->log_api_request( $url, '' );
 
 		$args = array(
 			'method'  => 'GET',
@@ -450,16 +455,16 @@ class Api {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			$this->log_request_error( $response );
+			$this->log_api_request_error( $response );
 
 			return $response;
 		}
 
 		$response_code         = wp_remote_retrieve_response_code( $response );
 		$response_body         = wp_remote_retrieve_body( $response );
-		$decoded_response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$decoded_response_body = json_decode( $response_body, true );
 
-		$this->log_request_ends( $response_code, $response_body );
+		$this->log_api_response( $response_code, $response_body );
 
 		if ( 200 !== $response_code ) {
 			return new WP_Error( 'pagbank_charge_calculate_fees_failed', 'PagBank calculate fees failed', $decoded_response_body );
@@ -486,7 +491,7 @@ class Api {
 			)
 		);
 
-		$this->log_request_begin( $url, $body, 'pagbank_oauth' );
+		$this->log_api_request( $url, $body, 'pagbank_oauth' );
 
 		$response = $this->request(
 			$url,
@@ -501,16 +506,16 @@ class Api {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			$this->log_request_error( $response, 'pagbank_oauth' );
+			$this->log_api_request_error( $response, 'pagbank_oauth' );
 
 			return $response;
 		}
 
 		$response_code         = wp_remote_retrieve_response_code( $response );
 		$response_body         = wp_remote_retrieve_body( $response );
-		$decoded_response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$decoded_response_body = json_decode( $response_body, true );
 
-		$this->log_request_ends( $response_code, $response_body, 'pagbank_oauth' );
+		$this->log_api_response( $response_code, $response_body, 'pagbank_oauth' );
 
 		if ( 200 !== $response_code ) {
 			return new WP_Error( 'pagbank_public_key_failed', 'PagBank get public key failed', $decoded_response_body );
@@ -524,11 +529,14 @@ class Api {
 	 *
 	 * @param string $message The message to be logged.
 	 * @param string $log_id  The log ID.
+	 * @param array  $context Additional context data.
+	 * @param string $level   Log level (debug, info, notice, warning, error, critical, alert, emergency).
 	 */
-	private function log( string $message, string $log_id = null ): void {
+	private function log( string $message, string $log_id = null, array $context = array(), string $level = 'debug' ): void {
 		$id = $log_id ?? $this->log_id;
 		if ( $id ) {
-			$this->logger->add( $id, $message );
+			$log_context = array_merge( array( 'source' => $id ), $context );
+			$this->logger->log( $level, $message, $log_context );
 		}
 	}
 
@@ -541,10 +549,15 @@ class Api {
 	 *
 	 * @return void
 	 */
-	private function log_request_begin( string $url, string $body, string $log_id = null ): void {
-		$this->log( 'REQUEST BEGINS', $log_id );
-		$this->log( 'REQUEST URL: ' . $url, $log_id );
-		$this->log( 'REQUEST BODY: ' . $body, $log_id );
+	private function log_api_request( string $url, string $body, string $log_id = null ): void {
+		$this->log(
+			'API Request',
+			$log_id,
+			array(
+				'url'  => $url,
+				'body' => $body,
+			)
+		);
 	}
 
 	/**
@@ -555,9 +568,17 @@ class Api {
 	 *
 	 * @return void
 	 */
-	private function log_request_error( WP_Error $error, string $log_id = null ): void {
-		$this->log( 'REQUEST ERROR: ' . $error->get_error_message(), $log_id );
-		$this->log( "REQUEST ENDS\n", $log_id );
+	private function log_api_request_error( WP_Error $error, string $log_id = null ): void {
+		$this->log(
+			'API Request Error',
+			$log_id,
+			array(
+				'error_code'    => $error->get_error_code(),
+				'error_message' => $error->get_error_message(),
+				'error_data'    => $error->get_error_data(),
+			),
+			'error'
+		);
 	}
 
 	/**
@@ -569,10 +590,28 @@ class Api {
 	 *
 	 * @return void
 	 */
-	private function log_request_ends( int $response_code, string $response_body, string $log_id = null ): void {
-		$this->log( 'RESPONSE CODE: ' . $response_code, $log_id );
-		$this->log( 'RESPONSE BODY: ' . $response_body, $log_id );
-		$this->log( "REQUEST ENDS\n", $log_id );
+	private function log_api_response( int $response_code, string $response_body, string $log_id = null ): void {
+		$is_success = $response_code >= 200 && $response_code < 300;
+		$level      = $is_success ? 'debug' : 'error';
+
+		$decoded_body = json_decode( $response_body, true );
+		$context      = array(
+			'response_code'     => $response_code,
+			'raw_response_body' => $response_body,
+		);
+
+		if ( null !== $decoded_body && json_last_error() === JSON_ERROR_NONE ) {
+			$context['response_body'] = $decoded_body;
+		} else {
+			$context['response_body'] = $response_body;
+		}
+
+		$this->log(
+			'API Response',
+			$log_id,
+			$context,
+			$level
+		);
 	}
 
 	/**
