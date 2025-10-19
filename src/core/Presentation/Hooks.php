@@ -54,6 +54,7 @@ class Hooks {
 			)
 		);
 		add_action( 'init', array( $this, 'filter_gateways_settings' ) );
+		add_action( 'woocommerce_email_order_details', array( $this, 'add_pix_details_to_email' ), 10, 4 );
 
 		if ( is_admin() ) {
 			add_action( 'admin_notices', array( $this, 'check_for_plugin_dependencies' ) );
@@ -217,6 +218,73 @@ class Hooks {
 	public function check_for_plugin_dependencies() {
 		if ( ! class_exists( 'Extra_Checkout_Fields_For_Brazil' ) ) {
 			include dirname( PAGBANK_WOOCOMMERCE_FILE_PATH ) . '/src/templates/admin-html-notice-missing-brazilian-market-on-woocommerce.php';
+		}
+	}
+
+	/**
+	 * Add Pix details to email.
+	 *
+	 * @param WC_Order $order         Order object.
+	 * @param bool     $sent_to_admin Sent to admin.
+	 * @param bool     $plain_text    Plain text.
+	 * @param object   $email         Email object.
+	 *
+	 * @return void
+	 */
+	public function add_pix_details_to_email( $order, $sent_to_admin, $plain_text, $email ) {
+		// Only add Pix details to customer emails, not admin emails.
+		if ( $sent_to_admin ) {
+			return;
+		}
+
+		// Only add Pix details for customer on-hold or processing emails.
+		if ( ! in_array( $email->id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
+			return;
+		}
+
+		// Only add Pix details for Pix payment method.
+		if ( $order->get_payment_method() !== 'pagbank_pix' ) {
+			return;
+		}
+
+		// Don't add Pix details if order is already paid.
+		if ( $order->is_paid() ) {
+			return;
+		}
+
+		$pix_expiration_date = $order->get_meta( '_pagbank_pix_expiration_date' );
+		$pix_text            = $order->get_meta( '_pagbank_pix_text' );
+		$pix_qr_code         = $order->get_meta( '_pagbank_pix_qr_code' );
+
+		// Check if we have Pix data.
+		if ( empty( $pix_text ) || empty( $pix_qr_code ) ) {
+			return;
+		}
+
+		if ( $plain_text ) {
+			wc_get_template(
+				'emails/plain/email-pix-instructions.php',
+				array(
+					'order'               => $order,
+					'pix_expiration_date' => $pix_expiration_date,
+					'pix_text'            => $pix_text,
+					'pix_qr_code'         => $pix_qr_code,
+				),
+				'woocommerce/pagbank/',
+				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
+			);
+		} else {
+			wc_get_template(
+				'emails/email-pix-instructions.php',
+				array(
+					'order'               => $order,
+					'pix_expiration_date' => $pix_expiration_date,
+					'pix_text'            => $pix_text,
+					'pix_qr_code'         => $pix_qr_code,
+				),
+				'woocommerce/pagbank/',
+				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
+			);
 		}
 	}
 }
