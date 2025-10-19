@@ -8,6 +8,7 @@
  * Author URI: https://pagseguro.uol.com.br/
  * License: GPL-2.0
  * Requires PHP: 7.4
+ * Requires Plugins: woocommerce, woocommerce-extra-checkout-fields-for-brazil
  * WC requires at least: 3.9
  * WC tested up to: 10.2
  * Text Domain: pagbank-for-woocommerce
