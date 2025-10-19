@@ -3,6 +3,7 @@
 		exit;
 	}
 ?>
+<h2><?php esc_html_e( 'Instruções de pagamento do Pix', 'pagbank-for-woocommerce' ); ?></h2>
 <div class="pagbank-pix"
 	data-pagbank-pix-order-status
 	data-order-id="<?php echo esc_attr( $order_id ); ?>"

@@ -78,6 +78,7 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'thankyou_page' ) );
+		add_action( 'woocommerce_view_order', array( $this, 'view_order_page' ), 10, 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
 
 		$this->is_available_validation();
@@ -274,6 +275,28 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * View order page HTML content.
+	 *
+	 * @param int $order_id Order ID.
+	 *
+	 * @return void
+	 */
+	public function view_order_page( $order_id ) {
+		$order = wc_get_order( $order_id );
+
+		// Only show for Pix payment method.
+		if ( $order->get_payment_method() !== $this->id ) {
+			return;
+		}
+
+		// Enqueue styles and scripts for view-order page.
+		$this->enqueue_pix_scripts();
+
+		// Use the same template as thankyou page.
+		$this->thankyou_page( $order_id );
+	}
+
+	/**
 	 * Check if gateway needs setup.
 	 *
 	 * @return bool
@@ -381,6 +404,15 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 			return;
 		}
 
+		$this->enqueue_pix_scripts();
+	}
+
+	/**
+	 * Enqueue Pix scripts and styles.
+	 *
+	 * @return void
+	 */
+	private function enqueue_pix_scripts() {
 		wp_enqueue_style(
 			'pagbank-order-pix',
 			plugins_url( 'styles/order-pix.css', PAGBANK_WOOCOMMERCE_FILE_PATH ),
@@ -404,6 +436,8 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 				'nonce' => wp_create_nonce( 'wp_rest' ),
 			)
 		);
+
+		wp_scripts()->add_data( 'pagbank-order-pix', 'pagbank_script', true );
 	}
 
 	/**
