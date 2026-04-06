@@ -1,0 +1,614 @@
+/**
+ * Gateway Settings Styles
+ *
+ * @package PagBank_WooCommerce
+ */
+
+@use "sass:color";
+@use "variables" as *;
+
+// =============================================================================
+// Animation Keyframes
+// =============================================================================
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		max-height: 0;
+		transform: translateY(-8px);
+	}
+
+	to {
+		opacity: 1;
+		max-height: 500px;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideUp {
+	from {
+		opacity: 1;
+		max-height: 500px;
+		transform: translateY(0);
+	}
+
+	to {
+		opacity: 0;
+		max-height: 0;
+		transform: translateY(-8px);
+	}
+}
+
+// =============================================================================
+// Gateway Settings Container
+// =============================================================================
+
+.pagbank-gateway-settings {
+	max-width: $admin-max-width;
+	margin: 0 auto;
+	padding: $admin-card-padding;
+
+	&--loading,
+	&--error {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 200px;
+		gap: $spacing-md;
+		flex-direction: column;
+	}
+
+	&__header {
+		margin-bottom: $spacing-xl;
+	}
+
+	&__title-row {
+		display: flex;
+		align-items: center;
+		gap: $spacing-md;
+		margin-bottom: $spacing-base;
+		width: 100%;
+	}
+
+	&__icon {
+		flex-shrink: 0;
+	}
+
+	&__title {
+		font-size: $font-size-xl;
+		font-weight: $font-weight-semibold;
+		color: $admin-text;
+		margin: 0;
+		flex-grow: 1;
+	}
+
+	&__subtitle {
+		font-size: $font-size-base;
+		color: $admin-text-light;
+		margin: $spacing-xs 0 $spacing-md;
+		font-weight: $font-weight-normal;
+	}
+
+	&__logo {
+		flex-shrink: 0;
+	}
+
+	&__nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: $spacing-xs;
+		margin: 0 !important;
+		padding: $spacing-md $spacing-base;
+		border: 2px solid $admin-border;
+		border-radius: $border-radius-md;
+		background: $color-white;
+		box-shadow: $shadow-sm;
+	}
+
+	&__nav-link {
+		font-size: $font-size-sm + 1;
+		color: $admin-primary;
+		text-decoration: none;
+		padding: $spacing-xs $spacing-sm;
+		border-radius: $border-radius-sm;
+		transition: background-color $transition-fast, color $transition-fast;
+
+		&:hover {
+			color: $admin-primary-hover;
+			background-color: rgba($admin-primary, 0.1);
+		}
+
+		&--current {
+			color: $admin-text-light;
+			cursor: default;
+
+			&:hover {
+				color: $admin-text-light;
+				background-color: transparent;
+			}
+		}
+	}
+
+	&__notice {
+		margin-bottom: $admin-card-padding;
+	}
+
+	&__content {
+		display: flex;
+		flex-direction: column;
+		gap: $admin-card-padding;
+	}
+
+	&__actions {
+		display: flex;
+		gap: $spacing-md;
+		margin-top: $spacing-xl;
+		padding-top: $spacing-xl;
+		border-top: 1px solid $admin-border;
+	}
+}
+
+// =============================================================================
+// Settings Card
+// =============================================================================
+
+.pagbank-settings-card {
+	border: 1px solid $admin-border;
+	border-radius: $border-radius-md;
+	background: $color-white;
+	box-shadow: $shadow-sm;
+
+	.components-card__header {
+		border-bottom: 1px solid $admin-border;
+		padding: $spacing-base $admin-card-padding;
+	}
+
+	&__title {
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		color: $admin-text;
+		margin: 0;
+	}
+
+	.components-card__body {
+		padding: $admin-card-padding;
+	}
+}
+
+// =============================================================================
+// Form Field Wrapper
+// =============================================================================
+
+.pagbank-form-field {
+	&--auto-width {
+		display: inline-block;
+		width: auto;
+
+		.components-select-control,
+		.components-text-control {
+			width: auto;
+		}
+
+		.components-select-control__input,
+		.components-text-control__input {
+			width: auto;
+			min-width: 120px;
+		}
+	}
+}
+
+// =============================================================================
+// Settings Field
+// =============================================================================
+
+.pagbank-settings-field {
+	margin-bottom: $admin-card-padding;
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	// WordPress components overrides
+	.components-base-control {
+		margin-bottom: 0;
+	}
+
+	.components-base-control__help {
+		margin-top: $spacing-xs;
+		color: $admin-text-light;
+		font-size: $font-size-sm;
+	}
+
+	.components-toggle-control {
+		.components-base-control__field {
+			margin-bottom: 0;
+		}
+	}
+
+	.components-text-control__input,
+	.components-textarea-control__input,
+	.components-select-control__input {
+		width: 100%;
+	}
+}
+
+// =============================================================================
+// Number Stepper Component
+// =============================================================================
+
+.pagbank-number-stepper-wrapper {
+	display: inline-block;
+	width: auto;
+}
+
+.pagbank-number-stepper {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid $admin-border;
+	border-radius: $border-radius-sm;
+	background: $color-white;
+	overflow: hidden;
+
+	&__button {
+		width: $stepper-button-size;
+		height: $stepper-button-size;
+		min-width: $stepper-button-size;
+		padding: 0;
+		border: none;
+		background: $admin-bg;
+		color: $admin-text;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background-color $transition-fast, color $transition-fast;
+		border-radius: 0;
+
+		&:hover:not(:disabled) {
+			background: color.adjust($admin-bg, $lightness: -5%);
+			color: $admin-primary;
+		}
+
+		&:disabled {
+			opacity: 0.4;
+			cursor: not-allowed;
+		}
+
+		&--minus {
+			border-right: 1px solid $admin-border;
+		}
+
+		&--plus {
+			border-left: 1px solid $admin-border;
+		}
+
+		svg {
+			width: $admin-card-padding;
+			height: $admin-card-padding;
+		}
+	}
+
+	&__input {
+		width: $stepper-input-width;
+		height: $stepper-button-size;
+		border: none;
+		text-align: center;
+		font-size: $font-size-base;
+		font-weight: $font-weight-medium;
+		color: $admin-text;
+		background: transparent;
+		padding: 0 $spacing-xs;
+		-moz-appearance: textfield;
+
+		&::-webkit-outer-spin-button,
+		&::-webkit-inner-spin-button {
+			-webkit-appearance: none;
+			margin: 0;
+		}
+
+		&:focus {
+			outline: none;
+			background: rgba($admin-primary, 0.05);
+		}
+
+		&:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+	}
+
+	&__suffix {
+		padding: 0 $spacing-md 0 $spacing-sm;
+		font-size: $font-size-sm + 1;
+		color: $admin-text-light;
+		white-space: nowrap;
+		border: none;
+	}
+}
+
+// =============================================================================
+// Animated Field
+// =============================================================================
+
+.pagbank-animated-field {
+	&.entering {
+		animation: slideDown 250ms ease-out forwards;
+	}
+
+	&.exiting {
+		animation: slideUp 200ms ease-in forwards;
+	}
+
+	&.idle {
+		max-height: none;
+	}
+}
+
+// =============================================================================
+// PagBank Connect
+// =============================================================================
+
+.pagbank-connect {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-md;
+
+	&__loading {
+		display: flex;
+		align-items: center;
+		gap: $spacing-sm;
+		color: $admin-text-light;
+	}
+
+	&__content {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: $spacing-md;
+	}
+
+	&__overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba($color-white, 0.7);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1;
+		border-radius: $border-radius-sm;
+	}
+
+	&__status {
+		margin: 0;
+
+		.components-notice__content {
+			display: flex;
+			align-items: center;
+			gap: $spacing-sm;
+		}
+	}
+
+	&__account-info {
+		display: table;
+		border-collapse: collapse;
+		width: 100%;
+	}
+
+	&__account-details {
+		display: table-row;
+	}
+
+	&__account-details-label {
+		display: table-cell;
+		font-weight: $font-weight-semibold;
+		color: $admin-text;
+		padding: $spacing-xs $spacing-md $spacing-xs 0;
+		white-space: nowrap;
+		vertical-align: top;
+	}
+
+	&__account-details-value {
+		display: table-cell;
+		font-size: $font-size-sm + 1;
+		color: $admin-text-light;
+		padding: $spacing-xs 0;
+		vertical-align: top;
+		word-break: break-word;
+	}
+
+	&__error {
+		margin: 0;
+	}
+
+	&__scope-warning {
+		margin: 0;
+	}
+
+	&__actions {
+		display: flex;
+		gap: $spacing-sm;
+		align-items: center;
+	}
+
+	&__button {
+		align-self: flex-start;
+	}
+
+	&__refresh-button {
+		margin-left: auto;
+		background: none;
+		border: none;
+		padding: $spacing-xs;
+		cursor: pointer;
+		color: $admin-text-light;
+		border-radius: $border-radius-sm;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: color $transition-fast, background-color $transition-fast;
+
+		&:hover:not(:disabled) {
+			color: $admin-primary;
+			background-color: rgba($color-black, 0.04);
+		}
+
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+}
+
+// =============================================================================
+// Connect Modal
+// =============================================================================
+
+.pagbank-connect-modal {
+	.components-modal__content {
+		padding: $admin-card-padding;
+	}
+
+	&__sandbox {
+		text-align: center;
+
+		p {
+			margin-bottom: $admin-card-padding;
+		}
+
+		.components-button {
+			display: inline-flex;
+			align-items: center;
+			gap: $spacing-sm;
+		}
+	}
+}
+
+// =============================================================================
+// Plan Selector
+// =============================================================================
+
+.pagbank-plan-selector {
+	&__intro {
+		margin-bottom: $spacing-base;
+		color: $admin-text;
+
+		a {
+			color: $admin-primary;
+
+			&:hover {
+				color: $admin-primary-hover;
+			}
+		}
+	}
+
+	&__choose {
+		margin-bottom: $admin-card-padding;
+		font-weight: $font-weight-medium;
+	}
+
+	&__plans {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: $admin-card-padding;
+		margin-bottom: $spacing-xl;
+
+		@media (max-width: 600px) {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	&__plan {
+		border: 1px solid $admin-border;
+		border-radius: $border-radius-md;
+		padding: $admin-card-padding;
+		background: $admin-bg;
+		display: flex;
+		flex-direction: column;
+	}
+
+	&__plan-title {
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		margin: 0 0 $spacing-base;
+		color: $admin-text;
+	}
+
+	&__plan-features {
+		list-style: none;
+		padding: 0;
+		margin: 0 0 $admin-card-padding;
+		flex-grow: 1;
+
+		li {
+			padding: 6px 0;
+			padding-left: $admin-card-padding;
+			position: relative;
+			font-size: $font-size-sm + 1;
+			color: $admin-text;
+
+			&::before {
+				content: "✓";
+				position: absolute;
+				left: 0;
+				color: $admin-primary;
+				font-weight: bold;
+			}
+		}
+	}
+
+	&__own-condition {
+		text-align: center;
+		padding-top: $admin-card-padding;
+		border-top: 1px solid $admin-border;
+	}
+}
+
+// =============================================================================
+// WordPress Components Overrides
+// =============================================================================
+
+.pagbank-gateway-settings {
+	// Button styles
+	.components-button.is-primary {
+		background: $admin-primary;
+		border-color: $admin-primary;
+
+		&:hover:not(:disabled) {
+			background: $admin-primary-hover;
+			border-color: $admin-primary-hover;
+		}
+
+		&:focus:not(:disabled) {
+			box-shadow: 0 0 0 2px $admin-primary;
+		}
+	}
+
+	// Toggle styles
+	.components-form-toggle.is-checked .components-form-toggle__track {
+		background: $admin-primary;
+	}
+
+	// Card header
+	.components-card__header h2 {
+		font-size: $font-size-lg;
+	}
+}
+
+// =============================================================================
+// WooCommerce Form Overrides
+// =============================================================================
+
+// Remove default WooCommerce form styling when React is active
+#pagbank-gateway-settings-root {
+	// Hide the default WooCommerce save button
+	~ .submit {
+		display: none;
+	}
+}
+
+// Hide WooCommerce form elements
+.woocommerce-save-button {
+	#pagbank-gateway-settings-root ~ & {
+		display: none;
+	}
+}

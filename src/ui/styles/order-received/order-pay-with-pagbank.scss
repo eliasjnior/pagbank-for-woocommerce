@@ -1,0 +1,42 @@
+/**
+ * Pay with PagBank Payment Instructions Styles
+ *
+ * @package PagBank_WooCommerce
+ */
+
+@use "../public/mixins" as *;
+@use "../public/variables" as *;
+
+.pagbank-pay-with-pagbank {
+	@include payment-card-base;
+
+	img {
+		@include qrcode-image;
+	}
+
+	.pagbank-alert {
+		@include alert-base;
+
+		&--warning {
+			background-color: $alert-warning-bg;
+			border: 1px solid $alert-warning-border;
+			color: $alert-warning-text;
+		}
+	}
+
+	.pagbank-copy-and-paste {
+		@include copy-paste-container;
+	}
+
+	.pagbank-expiration {
+		@include expiration-text;
+	}
+
+	.pagbank-open-app-button {
+		@include button-primary;
+
+		&--disabled {
+			@include button-disabled;
+		}
+	}
+}

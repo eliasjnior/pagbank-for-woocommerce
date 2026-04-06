@@ -1,0 +1,25 @@
+/**
+ * Boleto Payment Instructions Styles
+ *
+ * @package PagBank_WooCommerce
+ */
+
+@use "../public/mixins" as *;
+@use "../public/variables" as *;
+
+.pagbank-boleto {
+	@include payment-card-base;
+
+	.center {
+		@include text-center;
+	}
+
+	.pagbank-barcode-display {
+		@include barcode-display;
+	}
+
+	.boleto-barcode {
+		@include copy-paste-container;
+		margin: $barcode-margin;
+	}
+}

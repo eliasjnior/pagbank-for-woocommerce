@@ -12,7 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Exception;
-use WC_Logger;
 use WooCommerce;
 
 /**
@@ -22,17 +21,13 @@ class WebhookHandler {
 
 	/**
 	 * Instance.
-	 *
-	 * @var WebhookHandler
 	 */
-	private static $instance = null;
+	private static ?WebhookHandler $instance = null;
 
 	/**
 	 * Logger.
-	 *
-	 * @var WC_Logger
 	 */
-	private $logger;
+	private \WC_Logger_Interface $logger;
 
 	/**
 	 * Initialize webhook handler.
@@ -45,14 +40,14 @@ class WebhookHandler {
 	/**
 	 * Initialize logs.
 	 */
-	public function init_logs() {
-		$this->logger = new WC_Logger();
+	public function init_logs(): void {
+		$this->logger = wc_get_logger();
 	}
 
 	/**
 	 * Get instance.
 	 */
-	public static function get_instance() {
+	public static function get_instance(): WebhookHandler {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -64,8 +59,10 @@ class WebhookHandler {
 	 * Get webhook url.
 	 */
 	public static function get_webhook_url(): string {
-		if ( defined( 'PAGBANK_WEBHOOK_SITE_URL' ) && PAGBANK_WEBHOOK_SITE_URL ) {
-			return PAGBANK_WEBHOOK_SITE_URL . '/wc-api/pagbank_woocommerce_handler';
+		$custom_site_url = Helpers::get_constant_value( 'PAGBANK_WEBHOOK_SITE_URL' );
+
+		if ( $custom_site_url ) {
+			return $custom_site_url . '/wc-api/pagbank_woocommerce_handler';
 		}
 
 		return WooCommerce::instance()->api_request_url( 'pagbank_woocommerce_handler' );
@@ -75,19 +72,21 @@ class WebhookHandler {
 	 * Log.
 	 *
 	 * @param string $message Message.
+	 * @param array  $context Additional context data.
 	 */
-	private function log( string $message ): void {
+	private function log( string $message, array $context = array() ): void {
 		if ( ! $this->logger ) {
 			return;
 		}
 
-		$this->logger->add( 'pagbank_webhook', $message );
+		$log_context = array_merge( array( 'source' => 'pagbank_webhook' ), $context );
+		$this->logger->info( $message, $log_context );
 	}
 
 	/**
 	 * Handle webhook.
 	 */
-	public function handle() {
+	public function handle(): void {
 		try {
 			$input   = file_get_contents( 'php://input' );
 			$headers = array_change_key_case( getallheaders(), CASE_LOWER );
@@ -95,10 +94,16 @@ class WebhookHandler {
 			$content_type = $headers['content-type'];
 
 			if ( $content_type !== 'application/json' ) {
-				$this->log( 'Webhook received, but ignored because of the content type: ' . $content_type . ' (' . $input . ')' );
-				$this->log( 'Headers: ' . json_encode( $headers ) );
+				$this->log(
+					'Webhook received but ignored due to invalid content type',
+					array(
+						'content_type' => $content_type,
+						'input'        => $input,
+						'headers'      => $headers,
+					)
+				);
 
-				return wp_send_json_error(
+				wp_send_json_error(
 					array(
 						'message' => 'Content type inválido. O webhook não será processado.',
 					),
@@ -106,7 +111,12 @@ class WebhookHandler {
 				);
 			}
 
-			$this->log( 'Webhook received: ' . $input );
+			$this->log(
+				'Webhook received',
+				array(
+					'payload' => $input,
+				)
+			);
 
 			$payload = json_decode( $input, true );
 
@@ -115,8 +125,13 @@ class WebhookHandler {
 			$signature = isset( $reference['password'] ) ? $reference['password'] : null;
 
 			if ( empty( $order_id ) ) {
-				$this->log( 'Webhook validation failed: order_id is empty' );
-				return wp_send_json_error(
+				$this->log(
+					'Webhook validation failed: order_id is empty',
+					array(
+						'reference' => $reference,
+					)
+				);
+				wp_send_json_error(
 					array(
 						'message' => __( 'Pedido não encontrado.', 'pagbank-for-woocommerce' ),
 					),
@@ -127,8 +142,13 @@ class WebhookHandler {
 			$order = wc_get_order( $order_id );
 
 			if ( ! $order ) {
-				$this->log( 'Webhook validation failed: order not found' );
-				return wp_send_json_error(
+				$this->log(
+					'Webhook validation failed: order not found',
+					array(
+						'order_id' => $order_id,
+					)
+				);
+				wp_send_json_error(
 					array(
 						'message' => __( 'Pedido não encontrado.', 'pagbank-for-woocommerce' ),
 					),
@@ -137,8 +157,14 @@ class WebhookHandler {
 			}
 
 			if ( ! in_array( $order->get_payment_method(), array( 'pagbank_credit_card', 'pagbank_boleto', 'pagbank_pix' ), true ) ) {
-				$this->log( 'Webhook validation failed: invalid payment method for order id ' . $order_id );
-				return wp_send_json_error(
+				$this->log(
+					'Webhook validation failed: invalid payment method',
+					array(
+						'order_id'       => $order_id,
+						'payment_method' => $order->get_payment_method(),
+					)
+				);
+				wp_send_json_error(
 					array(
 						'message' => __( 'Pedido inválido', 'pagbank-for-woocommerce' ),
 					),
@@ -150,8 +176,13 @@ class WebhookHandler {
 			$charge   = $payload['charges'][0];
 
 			if ( ! $signature ) {
-				$this->log( 'Webhook validation failed: missing signature for order id ' . $order_id );
-				return wp_send_json_error(
+				$this->log(
+					'Webhook validation failed: missing signature',
+					array(
+						'order_id' => $order_id,
+					)
+				);
+				wp_send_json_error(
 					array(
 						'message' => __( 'Assinatura não encontrada.', 'pagbank-for-woocommerce' ),
 					),
@@ -162,8 +193,14 @@ class WebhookHandler {
 			$is_valid_signature = $password === $signature;
 
 			if ( ! $is_valid_signature ) {
-				$this->log( 'Webhook validation failed: invalid signature for order id ' . $order_id . ' (' . $signature . ')' );
-				return wp_send_json_error(
+				$this->log(
+					'Webhook validation failed: invalid signature',
+					array(
+						'order_id'  => $order_id,
+						'signature' => $signature,
+					)
+				);
+				wp_send_json_error(
 					array(
 						'message' => __( 'Assinatura inválida.', 'pagbank-for-woocommerce' ),
 					),
@@ -192,22 +229,28 @@ class WebhookHandler {
 					do_action( 'pagbank_order_completed', $order );
 					break;
 				case 'CANCELED':
-					$order->update_status( 'refunded', __( 'O pagamento foi cancelado.', 'pagbank-for-woocommerce' ) );
+					$order->update_status( 'cancelled', __( 'O pagamento foi cancelado.', 'pagbank-for-woocommerce' ) );
 
 					do_action( 'pagbank_order_cancelled', $order );
 					break;
 			}
 
-			$this->log( 'Webhook processed successfully' );
+			$this->log(
+				'Webhook processed successfully',
+				array(
+					'order_id' => $order_id,
+					'status'   => $charge['status'],
+				)
+			);
 
-			return wp_send_json_success(
+			wp_send_json_success(
 				array(
 					'message' => 'Webhook processed successfully',
 				),
 				200
 			);
 		} catch ( Exception $e ) {
-			return wp_send_json_error(
+			wp_send_json_error(
 				array(
 					'message' => 'Erro ao processar o webhook.',
 				),

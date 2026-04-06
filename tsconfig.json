@@ -20,10 +20,9 @@
         "noFallthroughCasesInSwitch": true,
 
         /* Alias */
-        "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["./src/ui/*"]
         }
     },
-    "include": ["src", "plugins", "vite.config.ts"]
+    "include": ["src", "scripts"]
 }
