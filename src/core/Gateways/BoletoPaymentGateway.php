@@ -56,7 +56,8 @@ class BoletoPaymentGateway extends WC_Payment_Gateway {
 		$this->id                 = 'pagbank_boleto';
 		$this->icon               = plugins_url( 'dist/images/icons/boleto.png', PAGBANK_WOOCOMMERCE_FILE_PATH );
 		$this->method_title       = __( 'PagBank Boleto', 'pagbank-for-woocommerce' );
-		$this->method_description = __( 'Aceite pagamentos via Boleto através do PagBank.', 'pagbank-for-woocommerce' );
+		// phpcs:ignore Generic.Files.LineLength -- Translation string cannot be split.
+		$this->method_description = __( 'Aceite pagamentos via boleto bancário com vencimento configurável. O boleto e o código de barras escaneável ficam disponíveis na página do pedido e no e-mail do cliente. Inclui confirmação automática via webhook e reembolso online total ou parcial.', 'pagbank-for-woocommerce' );
 		$this->description        = $this->get_option( 'description' );
 		$this->has_fields         = ! empty( $this->description );
 		$this->supports           = array(

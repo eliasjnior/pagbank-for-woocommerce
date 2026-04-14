@@ -64,7 +64,7 @@ class CheckoutPaymentGateway extends WC_Payment_Gateway {
 		$this->icon         = plugins_url( 'dist/images/icons/pagbank.png', PAGBANK_WOOCOMMERCE_FILE_PATH );
 		$this->method_title = __( 'Checkout PagBank', 'pagbank-for-woocommerce' );
 		// phpcs:ignore Generic.Files.LineLength -- Translation string cannot be split.
-		$this->method_description = __( 'Redirecione o cliente para a página de checkout do PagBank para concluir o pagamento. Aceita cartão de crédito, Pix, boleto e saldo PagBank.', 'pagbank-for-woocommerce' );
+		$this->method_description = __( 'Opção "tudo em um": o cliente é redirecionado para uma página única de pagamento do PagBank que aceita cartão de crédito, Pix, boleto e saldo PagBank. Tempo de expiração configurável, confirmação automática via webhook e reembolso online total ou parcial.', 'pagbank-for-woocommerce' );
 		$this->description        = $this->get_option( 'description' );
 		$this->has_fields         = ! empty( $this->description );
 		$this->supports           = array(

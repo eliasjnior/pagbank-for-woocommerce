@@ -102,7 +102,8 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 		$this->card_type          = 'CREDIT_CARD';
 		$this->card_field_prefix  = 'pagbank_credit_card';
 		$this->method_title       = __( 'PagBank Cartão de Crédito', 'pagbank-for-woocommerce' );
-		$this->method_description = __( 'Aceite pagamentos via cartão de crédito através do PagBank.', 'pagbank-for-woocommerce' );
+		// phpcs:ignore Generic.Files.LineLength -- Translation string cannot be split.
+		$this->method_description = __( 'Aceite pagamentos via cartão de crédito em checkout transparente, com parcelamento em até 18x (mediante aprovação), autenticação 3D Secure, tokenização para compras futuras e reembolso online total ou parcial.', 'pagbank-for-woocommerce' );
 		$this->has_fields         = true;
 		$this->supports           = array(
 			'products',
@@ -328,7 +329,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 			'PagBankCheckoutCreditCardVariables',
 			array(
 				'messages' => array(
-					'inputs_not_found'              => __( 'Campos não encontrado.', 'pagbank-for-woocommerce' ),
+					'inputs_not_found'              => __( 'Campos não encontrados.', 'pagbank-for-woocommerce' ),
 					'invalid_public_key'            => __( 'Chave pública inválida.', 'pagbank-for-woocommerce' ),
 					'invalid_holder_name'           => __( 'Nome do titular do cartão inválido.', 'pagbank-for-woocommerce' ),
 					'invalid_card_number'           => __( 'Número do cartão inválido.', 'pagbank-for-woocommerce' ),

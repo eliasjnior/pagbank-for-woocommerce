@@ -27,7 +27,8 @@ class DebitCardPaymentGateway extends CreditCardPaymentGateway {
 		$this->card_type          = 'DEBIT_CARD';
 		$this->card_field_prefix  = 'pagbank_debit_card';
 		$this->method_title       = __( 'PagBank Cartão de Débito', 'pagbank-for-woocommerce' );
-		$this->method_description = __( 'Aceite pagamentos via cartão de débito através do PagBank. A autenticação 3DS é obrigatória.', 'pagbank-for-woocommerce' );
+		// phpcs:ignore Generic.Files.LineLength -- Translation string cannot be split.
+		$this->method_description = __( 'Aceite pagamentos via cartão de débito em checkout transparente. A autenticação 3D Secure é obrigatória e transfere a responsabilidade por fraude ao banco emissor. Inclui reembolso online total ou parcial.', 'pagbank-for-woocommerce' );
 		$this->has_fields         = true;
 		$this->supports           = array(
 			'products',

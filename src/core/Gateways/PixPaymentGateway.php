@@ -56,7 +56,8 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 		$this->id                 = 'pagbank_pix';
 		$this->icon               = plugins_url( 'dist/images/icons/pix.png', PAGBANK_WOOCOMMERCE_FILE_PATH );
 		$this->method_title       = __( 'PagBank Pix', 'pagbank-for-woocommerce' );
-		$this->method_description = __( 'Aceite pagamentos via Pix através do PagBank.', 'pagbank-for-woocommerce' );
+		// phpcs:ignore Generic.Files.LineLength -- Translation string cannot be split.
+		$this->method_description = __( 'Aceite pagamentos via Pix com QR code e código copia e cola exibidos na página do pedido e no e-mail do cliente. Tempo de expiração configurável, confirmação automática via webhook e reembolso online total ou parcial. É necessário ter uma chave Pix cadastrada na sua conta PagBank.', 'pagbank-for-woocommerce' );
 		$this->description        = $this->get_option( 'description' );
 		$this->has_fields         = ! empty( $this->description );
 		$this->supports           = array(
