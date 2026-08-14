@@ -45,9 +45,12 @@ export const externals: Record<string, string> = {
 
 export const entries: Record<string, string> = {
 	"admin/gateway-settings": "src/ui/entries/admin/gateway-settings/index.tsx",
+	"admin/order-fields": "src/ui/entries/admin/order-fields.ts",
 	"public/order-received/payment-instructions":
 		"src/ui/entries/public/order-received/payment-instructions/index.tsx",
 	"public/legacy/checkout-credit-card": "src/ui/entries/public/legacy/checkout-credit-card.ts",
+	"public/legacy/checkout-fields": "src/ui/entries/public/legacy/checkout-fields.ts",
+	"public/blocks/checkout-fields": "src/ui/entries/public/blocks/checkout-fields.ts",
 	"public/blocks/checkout-boleto": "src/ui/entries/public/blocks/checkout-boleto/index.tsx",
 	"public/blocks/checkout-pix": "src/ui/entries/public/blocks/checkout-pix/index.tsx",
 	"public/blocks/checkout-credit-card":
@@ -85,7 +88,17 @@ export function getEntryBuildConfig(name: string, entry: string, options: BuildC
 			emptyOutDir: false,
 			// Use 'hidden' sourcemaps in dev to avoid warnings from node_modules without sourcemaps
 			sourcemap: isDev ? "hidden" : false,
-			minify: !isDev,
+			// Use terser (instead of the default esbuild) so we can preserve
+			// "translators:" comments, which WP-CLI i18n make-pot reads from the
+			// built JS to add context for placeholders in the .pot file.
+			minify: isDev ? false : ("terser" as const),
+			// Cast needed: Vite doesn't publish its internal TerserOptions type,
+			// so `format` isn't visible to TS even though terser accepts it.
+			terserOptions: {
+				format: {
+					comments: /translators:/i,
+				},
+			} as BuildOptions["terserOptions"],
 			watch: isDev ? {} : null,
 			lib: {
 				entry: resolve(rootDir, entry),
