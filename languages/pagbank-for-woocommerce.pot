@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0.
 msgid ""
 msgstr ""
-"Project-Id-Version: PagBank for WooCommerce 2.0.2\n"
+"Project-Id-Version: PagBank for WooCommerce 2.0.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pagbank-for-woocommerce\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-06T20:17:25+00:00\n"
+"POT-Creation-Date: 2026-08-25T23:36:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pagbank-for-woocommerce\n"
@@ -31,7 +31,7 @@ msgstr ""
 
 #. Author of the plugin
 #: pagbank-for-woocommerce.php
-#: src/core/Marketplace/WcfmIntegration.php:281
+#: src/core/Marketplace/WcfmIntegration.php:275
 #: src/core/Presentation/ApiHelpers.php:595
 msgid "PagBank"
 msgstr ""
@@ -390,8 +390,8 @@ msgstr ""
 
 #: src/core/Gateways/CreditCardPaymentGateway.php:213
 #: src/core/Presentation/Blocks/CreditCardBlocksSupport.php:143
-#: src/core/Presentation/Hooks.php:113
-#: src/core/Presentation/Hooks.php:132
+#: src/core/Presentation/Hooks.php:120
+#: src/core/Presentation/Hooks.php:139
 msgid "Cartão de crédito"
 msgstr ""
 
@@ -812,8 +812,95 @@ msgstr ""
 msgid "Aguardando pagamento do Pix."
 msgstr ""
 
-#: src/core/Marketplace/WcfmIntegration.php:328
+#: src/core/Marketplace/WcfmIntegration.php:322
 msgid "Você não pode reembolsar um pedido que possui comissões de vendedores."
+msgstr ""
+
+#. translators: %s: CNPJ number.
+#: src/core/Presentation/AddressFormatting.php:286
+#, php-format
+msgid "CNPJ: %s"
+msgstr ""
+
+#. translators: %s: CPF number.
+#: src/core/Presentation/AddressFormatting.php:290
+#, php-format
+msgid "CPF: %s"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:208
+#: src/core/Presentation/AdminOrderFields.php:252
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:300
+#: src/core/Presentation/LegacyCheckoutFields.php:309
+#: src/core/Presentation/LegacyCheckoutFields.php:387
+#: src/core/Presentation/LegacyCheckoutFields.php:560
+msgid "Número"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:209
+#: src/core/Presentation/AdminOrderFields.php:253
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:313
+#: src/core/Presentation/LegacyCheckoutFields.php:317
+#: src/core/Presentation/LegacyCheckoutFields.php:394
+#: src/core/Presentation/LegacyCheckoutFields.php:561
+msgid "Bairro"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:234
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:181
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:184
+#: src/core/Presentation/LegacyCheckoutFields.php:270
+msgid "Tipo de pessoa"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:237
+msgid "Selecionar"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:238
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:191
+#: src/core/Presentation/LegacyCheckoutFields.php:277
+msgid "Pessoa física"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:239
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:195
+#: src/core/Presentation/LegacyCheckoutFields.php:278
+msgid "Pessoa jurídica"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:242
+#: src/core/Presentation/AdminOrderFields.php:316
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:211
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:212
+#: src/core/Presentation/LegacyCheckoutFields.php:286
+#: src/core/Presentation/LegacyCheckoutFields.php:546
+msgid "CPF"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:243
+#: src/core/Presentation/AdminOrderFields.php:316
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:244
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:245
+#: src/core/Presentation/LegacyCheckoutFields.php:297
+#: src/core/Presentation/LegacyCheckoutFields.php:530
+msgid "CNPJ"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:247
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:279
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:280
+#: src/core/Presentation/LegacyCheckoutFields.php:352
+#: src/core/Presentation/LegacyCheckoutFields.php:358
+#: src/core/Presentation/LegacyCheckoutFields.php:536
+msgid "Razão Social"
+msgstr ""
+
+#: src/core/Presentation/AdminOrderFields.php:257
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:326
+#: src/core/Presentation/LegacyCheckoutFields.php:327
+#: src/core/Presentation/LegacyCheckoutFields.php:582
+msgid "Celular"
 msgstr ""
 
 #: src/core/Presentation/Api.php:173
@@ -882,79 +969,21 @@ msgstr ""
 msgid "Não foi possível obter o token de pagamento do Apple Pay."
 msgstr ""
 
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:92
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:95
-#: src/core/Presentation/LegacyCheckoutFields.php:199
-msgid "Tipo de pessoa"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:102
-#: src/core/Presentation/LegacyCheckoutFields.php:206
-msgid "Pessoa física"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:106
-#: src/core/Presentation/LegacyCheckoutFields.php:207
-msgid "Pessoa jurídica"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:122
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:123
-#: src/core/Presentation/LegacyCheckoutFields.php:215
-#: src/core/Presentation/LegacyCheckoutFields.php:427
-msgid "CPF"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:143
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:232
 #: src/core/Presentation/Helpers.php:352
-#: src/core/Presentation/LegacyCheckoutFields.php:429
+#: src/core/Presentation/LegacyCheckoutFields.php:548
 msgid "CPF inválido. Verifique os dígitos informados."
 msgstr ""
 
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:155
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:156
-#: src/core/Presentation/LegacyCheckoutFields.php:226
-#: src/core/Presentation/LegacyCheckoutFields.php:411
-msgid "CNPJ"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:176
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:265
 #: src/core/Presentation/Helpers.php:354
-#: src/core/Presentation/LegacyCheckoutFields.php:413
+#: src/core/Presentation/LegacyCheckoutFields.php:532
 msgid "CNPJ inválido. Verifique os dígitos informados."
 msgstr ""
 
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:190
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:191
-#: src/core/Presentation/LegacyCheckoutFields.php:281
-#: src/core/Presentation/LegacyCheckoutFields.php:287
-#: src/core/Presentation/LegacyCheckoutFields.php:417
-msgid "Razão Social"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:211
-#: src/core/Presentation/LegacyCheckoutFields.php:238
-#: src/core/Presentation/LegacyCheckoutFields.php:316
-#: src/core/Presentation/LegacyCheckoutFields.php:441
-msgid "Número"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:224
-#: src/core/Presentation/LegacyCheckoutFields.php:246
-#: src/core/Presentation/LegacyCheckoutFields.php:323
-#: src/core/Presentation/LegacyCheckoutFields.php:442
-msgid "Bairro"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:237
-#: src/core/Presentation/LegacyCheckoutFields.php:256
-#: src/core/Presentation/LegacyCheckoutFields.php:463
-msgid "Celular"
-msgstr ""
-
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:260
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:263
-#: src/core/Presentation/LegacyCheckoutFields.php:470
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:349
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:352
+#: src/core/Presentation/LegacyCheckoutFields.php:589
 msgid "Número de celular inválido."
 msgstr ""
 
@@ -1028,17 +1057,33 @@ msgid "CPF/CNPJ inválido. Informe 11 dígitos para CPF ou 14 para CNPJ."
 msgstr ""
 
 #. translators: %d is the number of installments.
-#: src/core/Presentation/Hooks.php:190
+#: src/core/Presentation/Hooks.php:197
 #, php-format
 msgid "Cartão de crédito (%1$dx de %2$s)"
 msgstr ""
 
-#: src/core/Presentation/Hooks.php:203
+#: src/core/Presentation/Hooks.php:210
 msgid "Configurações"
 msgstr ""
 
+#: src/core/Presentation/LegacyCheckoutFields.php:219
+msgid "PagBank para WooCommerce:"
+msgstr ""
+
+#: src/core/Presentation/LegacyCheckoutFields.php:220
+msgid "o plugin \"Brazilian Market on WooCommerce\" está ativo, mas não é mais necessário e a compatibilidade com ele será descontinuada."
+msgstr ""
+
+#: src/core/Presentation/LegacyCheckoutFields.php:221
+msgid "O PagBank já fornece os campos de CPF/CNPJ (incluindo o novo CNPJ alfanumérico), número, bairro e celular no checkout. Recomendamos desativá-lo."
+msgstr ""
+
+#: src/core/Presentation/LegacyCheckoutFields.php:223
+msgid "Gerenciar plugins"
+msgstr ""
+
 #. translators: %s: field label.
-#: src/core/Presentation/LegacyCheckoutFields.php:481
+#: src/core/Presentation/LegacyCheckoutFields.php:600
 #, php-format
 msgid "%s é um campo obrigatório."
 msgstr ""

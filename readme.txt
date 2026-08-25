@@ -4,7 +4,7 @@ Tags: woocommerce, pagseguro, pagbank, pagamento, brasil
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPLv2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -286,3 +286,7 @@ Caso o lojista não possua o identificador da conta preenchido, os produtos cada
 * Corrigido indicador de campo obrigatório duplicado no checkout clássico.
 * Corrigido cálculo do total no Checkout PagBank, incluindo o frete corretamente.
 * Melhorado registro de logs da API, mantendo o reference_id para facilitar o rastreamento.
+
+= 2.0.3 - 2026-08-25 =
+* Corrigido erro no envio de e-mails do WooCommerce.
+* Atualizado a compatibilidade declarada para WordPress 7.1 e WooCommerce 11.0.
