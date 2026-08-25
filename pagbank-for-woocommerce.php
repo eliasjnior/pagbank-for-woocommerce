@@ -12,6 +12,7 @@
  * WC requires at least: 9.9
  * WC tested up to: 11.0
  * Text Domain: pagbank-for-woocommerce
+ * Domain Path: /languages
  *
  * @package PagBank_WooCommerce
  */
