@@ -138,8 +138,40 @@ PHP classes use the namespace `PagBank_WooCommerce\` mapped to `src/core/`
 ### PHP
 - WordPress Coding Standards (WPCS) enforced via PHPCS
 - WooCommerce Coding Standards
-- Configuration in `phpcs.xml.dist`
+- Configuration in `.phpcs.xml`
 - Target PHP 7.4 compatibility (defined in composer.json platform config)
+
+#### Hook callbacks on loosely-typed hooks
+
+PHP checks parameter types when binding the arguments, *before* the first line of
+the body runs — so a guard like `if ( ! is_object( $email ) ) { return; }` can never
+save a typed signature. When a hook's contract is loose, a typed callback turns a
+third party's sloppy call into a fatal error that takes down the whole request, even
+on stores that never used PagBank.
+
+Treat a hook as loose when WooCommerce/WordPress themselves say so:
+
+- core's own callback is untyped, or defaults to another type —
+  `WC_Emails::order_details( $order, $sent_to_admin = false, $plain_text = false, $email = '' )`
+- core documents a union — `WC_Email::$object` is `@var object|bool`
+- callers register different `accepted_args`, so `WP_Hook` forwards fewer arguments
+  than the signature expects (`WC_Structured_Data` registers
+  `woocommerce_email_order_details` for three)
+- plugins re-fire the hook from their own templates with whatever they have at hand
+
+On those, declare no parameter types, give every parameter a default, type the
+return, document with `@param mixed`, and validate in the body.
+`Hooks::resolve_order()` and `Hooks::resolve_email_id()` normalise the usual
+arguments; keep the guard that identifies the payment method first so the callback
+is a cheap no-op for other gateways. The email hooks
+(`woocommerce_email_order_details`, `woocommerce_email_attachments`,
+`woocommerce_email_sent`) are the ones that bit us in practice.
+
+Everywhere else the types stay. Hooks whose only caller is core passing a fixed type
+(`woocommerce_get_order_item_totals`, `script_loader_tag`, `woocommerce_payment_gateways`,
+…) keep their parameter types, and so do the internal `pagbank_*` hooks whose
+`do_action` / `apply_filters` we own. Don't relax a signature without a call site
+that proves the contract is loose.
 
 ### TypeScript/JavaScript
 - ESLint with TypeScript plugin
