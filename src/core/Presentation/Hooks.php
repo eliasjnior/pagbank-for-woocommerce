@@ -55,6 +55,13 @@ class Hooks {
 	);
 
 	/**
+	 * Emails that carry the pending Pix/boleto payment instructions.
+	 *
+	 * @var array<string>
+	 */
+	private const PAYMENT_INSTRUCTIONS_EMAIL_IDS = array( 'customer_on_hold_order', 'customer_processing_order' );
+
+	/**
 	 * Hooks constructor.
 	 */
 	public function __construct() {
@@ -238,31 +245,122 @@ class Hooks {
 	}
 
 	/**
+	 * Resolve the email id out of whatever a caller put in the `$email` argument.
+	 *
+	 * Anything unreadable resolves to an empty string, which fails the allow-list.
+	 *
+	 * @param mixed $email Email object, email id, or whatever the caller passed.
+	 */
+	public static function resolve_email_id( $email ): string {
+		if ( is_object( $email ) && isset( $email->id ) && is_scalar( $email->id ) ) {
+			return (string) $email->id;
+		}
+
+		if ( is_string( $email ) ) {
+			return $email;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Resolve an order out of whatever a caller put in an order argument.
+	 *
+	 * @param mixed $order Order object, order id, or whatever the caller passed.
+	 */
+	public static function resolve_order( $order ): ?WC_Order {
+		if ( $order instanceof WC_Order ) {
+			return $order;
+		}
+
+		if ( is_numeric( $order ) ) {
+			$resolved = wc_get_order( (int) $order );
+
+			return $resolved instanceof WC_Order ? $resolved : null;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Emails allowed to carry the pending payment instructions for an order.
+	 *
+	 * @param WC_Order $order Order the email is being sent for.
+	 *
+	 * @return array<string> Allowed email ids.
+	 */
+	private static function get_payment_instructions_email_ids( WC_Order $order ): array {
+		/**
+		 * Filters which emails carry the pending Pix/boleto payment instructions.
+		 *
+		 * Lets plugins that send their own pending payment email opt into them.
+		 *
+		 * @param array<string> $email_ids Allowed email ids.
+		 * @param WC_Order      $order     Order the email is being sent for.
+		 */
+		return (array) apply_filters(
+			'pagbank_payment_instructions_email_ids',
+			self::PAYMENT_INSTRUCTIONS_EMAIL_IDS,
+			$order
+		);
+	}
+
+	/**
+	 * Whether the pending payment instructions belong in this email.
+	 *
+	 * @param array<string> $allowed_email_ids Emails that carry the instructions.
+	 * @param string        $email_id          Resolved email id.
+	 * @param bool          $sent_to_admin     Whether the email goes to the admin.
+	 * @param bool          $is_paid           Whether the order is already paid.
+	 */
+	public static function should_render_payment_instructions( array $allowed_email_ids, string $email_id, bool $sent_to_admin, bool $is_paid ): bool {
+		if ( $sent_to_admin || $is_paid || '' === $email_id ) {
+			return false;
+		}
+
+		return in_array( $email_id, array_map( 'strval', $allowed_email_ids ), true );
+	}
+
+	/**
+	 * Render a payment instructions template in its HTML or plain text flavour.
+	 *
+	 * @param string $template   Template file name, relative to the emails folder.
+	 * @param bool   $plain_text Whether the email is being rendered as plain text.
+	 * @param array  $args       Template arguments.
+	 */
+	private static function render_payment_instructions_template( string $template, bool $plain_text, array $args ): void {
+		wc_get_template(
+			'emails/' . ( $plain_text ? 'plain/' : '' ) . $template,
+			$args,
+			'woocommerce/pagbank/',
+			PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
+		);
+	}
+
+	/**
 	 * Add Pix details to email.
 	 *
-	 * @param WC_Order $order         Order object.
-	 * @param bool     $sent_to_admin Sent to admin.
-	 * @param bool     $plain_text    Plain text.
-	 * @param object   $email         Email object.
+	 * Parameters are untyped on purpose: loosely-typed hook, see CLAUDE.md.
+	 *
+	 * @param mixed $order         Order object.
+	 * @param mixed $sent_to_admin Sent to admin.
+	 * @param mixed $plain_text    Plain text.
+	 * @param mixed $email         Email object.
 	 */
-	public function add_pix_details_to_email( WC_Order $order, bool $sent_to_admin, bool $plain_text, object $email ): void {
-		// Only add Pix details to customer emails, not admin emails.
-		if ( $sent_to_admin ) {
+	public function add_pix_details_to_email( $order, $sent_to_admin = false, $plain_text = false, $email = null ): void {
+		$order = self::resolve_order( $order );
+
+		// Checked first so the callback is a cheap no-op for other gateways.
+		if ( null === $order || $order->get_payment_method() !== 'pagbank_pix' ) {
 			return;
 		}
 
-		// Only add Pix details for customer on-hold or processing emails.
-		if ( ! in_array( $email->id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
-			return;
-		}
-
-		// Only add Pix details for Pix payment method.
-		if ( $order->get_payment_method() !== 'pagbank_pix' ) {
-			return;
-		}
-
-		// Don't add Pix details if order is already paid.
-		if ( $order->is_paid() ) {
+		if ( ! self::should_render_payment_instructions(
+			self::get_payment_instructions_email_ids( $order ),
+			self::resolve_email_id( $email ),
+			(bool) $sent_to_admin,
+			$order->is_paid()
+		) ) {
 			return;
 		}
 
@@ -275,59 +373,42 @@ class Hooks {
 			return;
 		}
 
-		if ( $plain_text ) {
-			wc_get_template(
-				'emails/plain/email-pix-instructions.php',
-				array(
-					'order'               => $order,
-					'pix_expiration_date' => $pix_expiration_date,
-					'pix_text'            => $pix_text,
-					'pix_qr_code'         => $pix_qr_code,
-				),
-				'woocommerce/pagbank/',
-				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
-			);
-		} else {
-			wc_get_template(
-				'emails/email-pix-instructions.php',
-				array(
-					'order'               => $order,
-					'pix_expiration_date' => $pix_expiration_date,
-					'pix_text'            => $pix_text,
-					'pix_qr_code'         => $pix_qr_code,
-				),
-				'woocommerce/pagbank/',
-				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
-			);
-		}
+		self::render_payment_instructions_template(
+			'email-pix-instructions.php',
+			(bool) $plain_text,
+			array(
+				'order'               => $order,
+				'pix_expiration_date' => $pix_expiration_date,
+				'pix_text'            => $pix_text,
+				'pix_qr_code'         => $pix_qr_code,
+			)
+		);
 	}
 
 	/**
 	 * Add Boleto details to email.
 	 *
-	 * @param WC_Order $order         Order object.
-	 * @param bool     $sent_to_admin Sent to admin.
-	 * @param bool     $plain_text    Plain text.
-	 * @param object   $email         Email object.
+	 * Parameters are untyped on purpose: loosely-typed hook, see CLAUDE.md.
+	 *
+	 * @param mixed $order         Order object.
+	 * @param mixed $sent_to_admin Sent to admin.
+	 * @param mixed $plain_text    Plain text.
+	 * @param mixed $email         Email object.
 	 */
-	public function add_boleto_details_to_email( WC_Order $order, bool $sent_to_admin, bool $plain_text, object $email ): void {
-		// Only add Boleto details to customer emails, not admin emails.
-		if ( $sent_to_admin ) {
+	public function add_boleto_details_to_email( $order, $sent_to_admin = false, $plain_text = false, $email = null ): void {
+		$order = self::resolve_order( $order );
+
+		// Checked first so the callback is a cheap no-op for other gateways.
+		if ( null === $order || $order->get_payment_method() !== 'pagbank_boleto' ) {
 			return;
 		}
 
-		// Only add Boleto details for customer on-hold or processing emails.
-		if ( ! in_array( $email->id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
-			return;
-		}
-
-		// Only add Boleto details for Boleto payment method.
-		if ( $order->get_payment_method() !== 'pagbank_boleto' ) {
-			return;
-		}
-
-		// Don't add Boleto details if order is already paid.
-		if ( $order->is_paid() ) {
+		if ( ! self::should_render_payment_instructions(
+			self::get_payment_instructions_email_ids( $order ),
+			self::resolve_email_id( $email ),
+			(bool) $sent_to_admin,
+			$order->is_paid()
+		) ) {
 			return;
 		}
 
@@ -341,60 +422,45 @@ class Hooks {
 			return;
 		}
 
-		if ( $plain_text ) {
-			wc_get_template(
-				'emails/plain/email-boleto-instructions.php',
-				array(
-					'order'                  => $order,
-					'boleto_expiration_date' => $boleto_expiration_date,
-					'boleto_barcode'         => $boleto_barcode,
-					'boleto_link_pdf'        => $boleto_link_pdf,
-					'boleto_link_png'        => $boleto_link_png,
-				),
-				'woocommerce/pagbank/',
-				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
-			);
-		} else {
-			wc_get_template(
-				'emails/email-boleto-instructions.php',
-				array(
-					'order'                  => $order,
-					'boleto_expiration_date' => $boleto_expiration_date,
-					'boleto_barcode'         => $boleto_barcode,
-					'boleto_link_pdf'        => $boleto_link_pdf,
-					'boleto_link_png'        => $boleto_link_png,
-				),
-				'woocommerce/pagbank/',
-				PAGBANK_WOOCOMMERCE_TEMPLATES_PATH
-			);
-		}
+		self::render_payment_instructions_template(
+			'email-boleto-instructions.php',
+			(bool) $plain_text,
+			array(
+				'order'                  => $order,
+				'boleto_expiration_date' => $boleto_expiration_date,
+				'boleto_barcode'         => $boleto_barcode,
+				'boleto_link_pdf'        => $boleto_link_pdf,
+				'boleto_link_png'        => $boleto_link_png,
+			)
+		);
 	}
 
 	/**
 	 * Attach Boleto PDF to email.
 	 *
-	 * @param array  $attachments Attachments array.
-	 * @param string $email_id    Email ID.
-	 * @param object $order       Order object.
+	 * Parameters are untyped on purpose: `$order` is WC_Email::$object, which core
+	 * documents as `object|bool`. See CLAUDE.md.
+	 *
+	 * @param mixed $attachments Attachments array.
+	 * @param mixed $email_id    Email ID.
+	 * @param mixed $order       Order object, or whatever object the email is for.
 	 */
-	public function attach_boleto_pdf_to_email( array $attachments, string $email_id, object $order ): array {
-		// Only attach to customer emails.
-		if ( ! in_array( $email_id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
+	public function attach_boleto_pdf_to_email( $attachments, $email_id = '', $order = null ): array {
+		$attachments = is_array( $attachments ) ? $attachments : array();
+		$order       = self::resolve_order( $order );
+
+		// Checked first so the callback is a cheap no-op for other gateways.
+		if ( null === $order || $order->get_payment_method() !== 'pagbank_boleto' ) {
 			return $attachments;
 		}
 
-		// Check if order exists and is a WC_Order.
-		if ( ! $order instanceof WC_Order ) {
-			return $attachments;
-		}
-
-		// Only attach for Boleto payment method.
-		if ( $order->get_payment_method() !== 'pagbank_boleto' ) {
-			return $attachments;
-		}
-
-		// Don't attach if order is already paid.
-		if ( $order->is_paid() ) {
+		// The allow-list is customer-only, so admin emails are already excluded.
+		if ( ! self::should_render_payment_instructions(
+			self::get_payment_instructions_email_ids( $order ),
+			self::resolve_email_id( $email_id ),
+			false,
+			$order->is_paid()
+		) ) {
 			return $attachments;
 		}
 
@@ -470,22 +536,26 @@ class Hooks {
 	/**
 	 * Cleanup temporary boleto PDFs after email is sent.
 	 *
-	 * @param bool   $sent     Whether email was sent successfully.
-	 * @param string $email_id Email ID.
-	 * @param object $email    Email object.
+	 * Parameters are untyped on purpose: loosely-typed hook, see CLAUDE.md.
+	 *
+	 * @param mixed $sent     Whether email was sent successfully.
+	 * @param mixed $email_id Email ID.
+	 * @param mixed $email    Email object.
 	 */
-	public function cleanup_boleto_pdfs_after_email( bool $sent, string $email_id, object $email ): void {
-		// Only cleanup for customer emails.
-		if ( ! in_array( $email_id, array( 'customer_on_hold_order', 'customer_processing_order' ), true ) ) {
-			return;
-		}
+	public function cleanup_boleto_pdfs_after_email( $sent = false, $email_id = '', $email = null ): void {
+		// Keyed by the order, not by which email carried the attachment.
+		unset( $sent, $email_id );
 
 		// Get order from email object.
-		if ( ! isset( $email->object ) || ! $email->object instanceof WC_Order ) {
+		if ( ! is_object( $email ) || ! isset( $email->object ) ) {
 			return;
 		}
 
-		$order = $email->object;
+		$order = self::resolve_order( $email->object );
+
+		if ( null === $order ) {
+			return;
+		}
 
 		// Check if we have a temp file for this order.
 		$order_id = $order->get_id();
