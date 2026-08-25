@@ -65,7 +65,9 @@ async function createZip() {
 		const filePath = file.slice(rootDir.length + 1);
 
 		// Check if file should be included
-		const shouldInclude = filesToInclude.some((include) => filePath.startsWith(include));
+		const shouldInclude =
+			Path.basename(filePath) !== ".DS_Store" &&
+			filesToInclude.some((include) => filePath.startsWith(include));
 
 		if (shouldInclude) {
 			folder.file(filePath, Fs.readFileSync(file));
