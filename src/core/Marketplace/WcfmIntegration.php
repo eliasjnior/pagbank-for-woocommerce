@@ -213,7 +213,7 @@ class WcfmIntegration {
 		$splits = $this->get_splits_payment_data( $order, $gateway );
 
 		if ( $splits ) {
-			$data['qr_codes'][0]['splits'] = $splits;
+			$data['charges'][0]['splits'] = $splits;
 		}
 
 		return $data;

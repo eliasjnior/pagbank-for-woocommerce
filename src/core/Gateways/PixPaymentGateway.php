@@ -16,6 +16,7 @@ use PagBank_WooCommerce\Gateways\Traits\ReactSettingsTrait;
 use PagBank_WooCommerce\Presentation\Api;
 use PagBank_WooCommerce\Presentation\ApiHelpers;
 use PagBank_WooCommerce\Presentation\Connect;
+use PagBank_WooCommerce\Presentation\WebhookHandler;
 use WC_Order;
 use WC_Payment_Gateway;
 use WP_Error;
@@ -175,20 +176,54 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 			$data                  = ApiHelpers::get_pix_payment_api_data( $this, $order, $expiration_in_minutes );
 			$response              = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id() ) );
 
+			$api_error = __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' );
+
 			if ( is_wp_error( $response ) ) {
-				wc_add_notice( __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ), 'error' );
+				wc_add_notice( $api_error, 'error' );
 
 				return array(
 					'result'  => 'failure',
-					'message' => __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ),
+					'message' => $api_error,
 				);
 			}
 
-			// Add order details.
-			$this->save_order_meta_data( $order, $response, $data );
+			$charge = $response['charges'][0] ?? null;
 
-			// Update status to on-hold.
-			$order->update_status( 'on-hold', __( 'Aguardando pagamento do Pix.', 'pagbank-for-woocommerce' ) );
+			if ( ! is_array( $charge ) ) {
+				throw new Exception( $api_error );
+			}
+
+			$charge_status       = isset( $charge['status'] ) ? (string) $charge['status'] : '';
+			$unavailable_message = __( 'Não foi possível gerar o Pix. Tente novamente.', 'pagbank-for-woocommerce' );
+
+			// Reuse the webhook mapping so both paths read charge statuses the same way.
+			switch ( WebhookHandler::map_charge_status( $charge_status ) ) {
+				case 'on-hold':
+					if ( ! $this->charge_has_pix_data( $charge ) ) {
+						$this->save_payment_response_meta_data( $order, $charge );
+
+						throw new Exception( $unavailable_message );
+					}
+
+					$this->save_order_meta_data( $order, $response, $data );
+					$this->save_payment_response_meta_data( $order, $charge );
+					$order->update_status( 'on-hold', __( 'Aguardando pagamento do Pix.', 'pagbank-for-woocommerce' ) );
+					break;
+				case 'completed':
+					// No QR code check here: a paid order must never fail the checkout.
+					$this->save_order_meta_data( $order, $response, $data );
+					$this->save_payment_response_meta_data( $order, $charge );
+					$order->payment_complete( isset( $charge['id'] ) ? (string) $charge['id'] : '' );
+					break;
+				case 'failed':
+					$this->save_payment_response_meta_data( $order, $charge );
+
+					throw new Exception( __( 'O pagamento foi recusado.', 'pagbank-for-woocommerce' ) );
+				default:
+					$this->save_payment_response_meta_data( $order, $charge );
+
+					throw new Exception( $unavailable_message );
+			}
 
 			return array(
 				'result'   => 'success',
@@ -229,6 +264,18 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * Whether a charge carries a payable QR code.
+	 *
+	 * @param array $charge Charge data from the order response.
+	 */
+	private function charge_has_pix_data( array $charge ): bool {
+		$text    = (string) ( $charge['qr_code']['text'] ?? '' );
+		$qr_code = ApiHelpers::find_charge_link_href( $charge['links'] ?? array(), 'QRCODE.PNG' );
+
+		return '' !== $text && '' !== $qr_code;
+	}
+
+	/**
 	 * Save order meta data.
 	 *
 	 * @param WC_Order $order Order object.
@@ -236,17 +283,54 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 	 * @param array    $request Request data.
 	 */
 	private function save_order_meta_data( WC_Order $order, array $response, array $request ): void {
-		$charge = $response['charges'][0];
+		$charge = is_array( $response['charges'][0] ?? null ) ? $response['charges'][0] : array();
 
-		$order->update_meta_data( '_pagbank_order_id', $response['id'] );
-		$order->update_meta_data( '_pagbank_charge_id', $charge['id'] );
+		$order->update_meta_data( '_pagbank_order_id', (string) ( $response['id'] ?? '' ) );
+		$order->update_meta_data( '_pagbank_charge_id', (string) ( $charge['id'] ?? '' ) );
 
-		$order->update_meta_data( '_pagbank_pix_expiration_date', $response['qr_codes'][0]['expiration_date'] );
-		$order->update_meta_data( '_pagbank_pix_text', $response['qr_codes'][0]['text'] );
-		$order->update_meta_data( '_pagbank_pix_qr_code', $response['qr_codes'][0]['links'][0]['href'] );
+		$expiration_date = (string) ( $charge['payment_method']['pix']['expiration_date'] ?? '' );
+
+		$order->update_meta_data( '_pagbank_pix_expiration_date', $expiration_date );
+		$order->update_meta_data( '_pagbank_pix_text', (string) ( $charge['qr_code']['text'] ?? '' ) );
+		$order->update_meta_data( '_pagbank_pix_qr_code', ApiHelpers::find_charge_link_href( $charge['links'] ?? array(), 'QRCODE.PNG' ) );
 		$order->update_meta_data( '_pagbank_environment', $this->environment );
 
 		$order->save_meta_data();
+	}
+
+	/**
+	 * Persist the risk-analysis engine response for auditing.
+	 *
+	 * @param WC_Order $order  Order object.
+	 * @param array    $charge Charge data from the order response.
+	 */
+	private function save_payment_response_meta_data( WC_Order $order, array $charge ): void {
+		$payment_response = $charge['payment_response'] ?? null;
+
+		if ( ! is_array( $payment_response ) ) {
+			return;
+		}
+
+		$code    = isset( $payment_response['code'] ) ? (string) $payment_response['code'] : '';
+		$message = isset( $payment_response['message'] ) ? (string) $payment_response['message'] : '';
+
+		// An approved charge usually carries no reason; skip the empty note.
+		if ( '' === $code && '' === $message ) {
+			return;
+		}
+
+		$order->update_meta_data( '_pagbank_pix_payment_response_code', $code );
+		$order->update_meta_data( '_pagbank_pix_payment_response_message', $message );
+		$order->save_meta_data();
+
+		$order->add_order_note(
+			sprintf(
+				/* translators: %1$s: response code, %2$s: response message. */
+				__( 'Análise de risco do Pix: %1$s - %2$s', 'pagbank-for-woocommerce' ),
+				$code,
+				$message
+			)
+		);
 	}
 
 	/**

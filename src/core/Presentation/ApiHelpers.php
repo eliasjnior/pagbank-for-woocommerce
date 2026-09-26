@@ -385,12 +385,18 @@ class ApiHelpers {
 			'shipping'          => array(
 				'address' => self::get_order_shipping_address_api_data( $order ),
 			),
-			'qr_codes'          => array(
+			'charges'           => array(
 				array(
-					'amount'          => array(
-						'value' => Helpers::format_money_cents( $order->get_total() ),
+					'reference_id'   => self::get_order_reference_id_data( $order ),
+					// translators: %1$s: order id, %2$s: blog name.
+					'description'    => sprintf( __( 'Pedido %1$s - %2$s', 'pagbank-for-woocommerce' ), $order->get_id(), get_bloginfo( 'name' ) ),
+					'amount'         => self::get_order_amount_api_data( $order ),
+					'payment_method' => array(
+						'type' => 'PIX',
+						'pix'  => array(
+							'expiration_date' => Carbon::now()->addMinutes( $expiration_in_minutes )->toAtomString(),
+						),
 					),
-					'expiration_date' => Carbon::now()->addMinutes( $expiration_in_minutes )->toAtomString(),
 				),
 			),
 			'notification_urls' => array(
@@ -399,6 +405,28 @@ class ApiHelpers {
 		);
 
 		return apply_filters( 'pagbank_pix_payment_data', $data, $order, $gateway );
+	}
+
+	/**
+	 * Find a charge link href by its relation type.
+	 *
+	 * The Pix charge response returns multiple links (e.g. QRCODE.PNG,
+	 * QRCODE.BASE64, JSR_BIOMETRIC_PIX), so the link must be selected by its
+	 * `rel` instead of a fixed index.
+	 *
+	 * @param array  $links The charge `links` array.
+	 * @param string $rel   The relation type to look for (e.g. QRCODE.PNG).
+	 *
+	 * @return string The matching href, or an empty string when not found.
+	 */
+	public static function find_charge_link_href( array $links, string $rel ): string {
+		foreach ( $links as $link ) {
+			if ( isset( $link['rel'], $link['href'] ) && $link['rel'] === $rel ) {
+				return $link['href'];
+			}
+		}
+
+		return '';
 	}
 
 	/**

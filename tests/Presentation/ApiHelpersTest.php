@@ -164,6 +164,50 @@ class ApiHelpersTest extends TestCase {
 	}
 
 	/**
+	 * The QR code image link must be selected by its rel, not by index, since
+	 * the Pix charge response also carries QRCODE.BASE64 and JSR_BIOMETRIC_PIX.
+	 */
+	public function test_find_charge_link_href_returns_matching_rel(): void {
+		$links = array(
+			array(
+				'rel'  => 'SELF',
+				'href' => 'https://api/charges/CHAR_1',
+			),
+			array(
+				'rel'  => 'QRCODE.PNG',
+				'href' => 'https://api/qrcode/QRCO_1/png',
+			),
+			array(
+				'rel'  => 'QRCODE.BASE64',
+				'href' => 'https://api/qrcode/QRCO_1/base64',
+			),
+			array(
+				'rel'  => 'JSR_BIOMETRIC_PIX',
+				'href' => 'https://openfinance/checkout?intentId=1',
+			),
+		);
+
+		$this->assertSame( 'https://api/qrcode/QRCO_1/png', ApiHelpers::find_charge_link_href( $links, 'QRCODE.PNG' ) );
+		$this->assertSame( 'https://api/qrcode/QRCO_1/base64', ApiHelpers::find_charge_link_href( $links, 'QRCODE.BASE64' ) );
+	}
+
+	/**
+	 * A missing rel (or an empty links array) must yield an empty string
+	 * instead of raising an undefined-index error.
+	 */
+	public function test_find_charge_link_href_returns_empty_when_absent(): void {
+		$links = array(
+			array(
+				'rel'  => 'SELF',
+				'href' => 'https://api/charges/CHAR_1',
+			),
+		);
+
+		$this->assertSame( '', ApiHelpers::find_charge_link_href( $links, 'QRCODE.PNG' ) );
+		$this->assertSame( '', ApiHelpers::find_charge_link_href( array(), 'QRCODE.PNG' ) );
+	}
+
+	/**
 	 * Build a representative create-order payload.
 	 */
 	private function sample_order_payload(): array {
