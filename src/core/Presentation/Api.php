@@ -63,7 +63,8 @@ class Api {
 	 */
 	public function __construct( string $environment, ?string $log_id = null ) {
 		$this->connect    = new Connect( $environment );
-		$this->is_sandbox = $environment === 'sandbox';
+		// Must match Connect: disagreeing sends the sandbox token to production.
+		$this->is_sandbox = 'production' !== $environment;
 		$this->log_id     = $log_id;
 		$this->logger     = wc_get_logger();
 	}

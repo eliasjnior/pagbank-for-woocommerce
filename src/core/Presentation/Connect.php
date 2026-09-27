@@ -196,7 +196,7 @@ class Connect {
 	public function get_access_token(): ?string {
 		$data = $this->get_data();
 
-		return $data['access_token'];
+		return $data['access_token'] ?? null;
 	}
 
 	/**
