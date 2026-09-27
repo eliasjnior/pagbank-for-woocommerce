@@ -135,6 +135,15 @@ PHP classes use the namespace `PagBank_WooCommerce\` mapped to `src/core/`
 
 ## Code Standards
 
+### Comments
+
+Keep them sparse. A comment earns its place only by explaining a non-obvious
+*why* — an asymmetry between branches, why a format or constant was chosen over
+the obvious alternative, a constraint the code cannot show. One or two lines, not
+a paragraph: state the reason once, without also adding a worked example and a
+restatement. Drop anything that narrates the next line, and keep docblocks to the
+summary plus the tags PHPCS demands.
+
 ### PHP
 - WordPress Coding Standards (WPCS) enforced via PHPCS
 - WooCommerce Coding Standards

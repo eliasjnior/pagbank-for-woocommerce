@@ -11,6 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use libphonenumber\NumberParseException;
+use libphonenumber\PhoneNumberFormat;
+use libphonenumber\PhoneNumberUtil;
 use PagBank_WooCommerce\Validators\CPF;
 use PagBank_WooCommerce\Validators\CNPJ;
 use PagBank_WooCommerce\Validators\AlphanumericCNPJ;
@@ -165,6 +168,39 @@ class Helpers {
 		$validator = new CPF( $cpf );
 
 		return $validator->format();
+	}
+
+	/**
+	 * Whether a Brazilian cellphone number is valid.
+	 *
+	 * @param string $cellphone Cellphone number in any accepted notation.
+	 */
+	public static function is_valid_cellphone( string $cellphone ): bool {
+		$phone_util = PhoneNumberUtil::getInstance();
+
+		try {
+			return $phone_util->isValidNumber( $phone_util->parse( $cellphone, 'BR' ) );
+		} catch ( NumberParseException $e ) {
+			return false;
+		}
+	}
+
+	/**
+	 * Format a cellphone number as (00) 00000-0000.
+	 *
+	 * National, not international: it matches what the checkout masks render, so
+	 * a stored value round-trips instead of its +55 being read back as the DDD.
+	 *
+	 * @param string $cellphone Cellphone number in any accepted notation.
+	 */
+	public static function format_cellphone( string $cellphone ): string {
+		$phone_util = PhoneNumberUtil::getInstance();
+
+		try {
+			return $phone_util->format( $phone_util->parse( $cellphone, 'BR' ), PhoneNumberFormat::NATIONAL );
+		} catch ( NumberParseException $e ) {
+			return $cellphone;
+		}
 	}
 
 	/**

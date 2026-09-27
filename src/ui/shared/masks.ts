@@ -60,7 +60,15 @@ export const formatCnpj = (value: string, alphanumeric: boolean): string => {
 	return formatted;
 };
 
-export const sanitizePhone = (value: string): string => value.replace(/[^0-9]/g, "").slice(0, 11);
+export const sanitizePhone = (value: string): string => {
+	const digits = value.replace(/[^0-9]/g, "");
+
+	// Stored values carry the +55 country code: trimming the overflow from the
+	// right would read "55" as the DDD and eat the last two digits.
+	const national = digits.length > 11 && digits.startsWith("55") ? digits.slice(2) : digits;
+
+	return national.slice(0, 11);
+};
 
 export const formatCellphone = (value: string): string => {
 	const digits = sanitizePhone(value);

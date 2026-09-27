@@ -78,4 +78,63 @@ class HelpersTest extends TestCase {
 		$this->assertSame( 'cpf', $cpf['type'] );
 		$this->assertSame( '11144477735', $cpf['value'] );
 	}
+
+	/**
+	 * Regression: the international format's +55 was read back as the DDD,
+	 * turning "+55 11 99999-9999" into "(55) 11999-9999".
+	 *
+	 * @dataProvider cellphone_format_provider
+	 */
+	public function test_format_cellphone( string $input, string $expected ): void {
+		$this->assertSame( $expected, Helpers::format_cellphone( $input ) );
+	}
+
+	public function cellphone_format_provider(): array {
+		return array(
+			'as typed'                   => array( '(11) 99999-9999', '(11) 99999-9999' ),
+			'digits only'                => array( '11999999999', '(11) 99999-9999' ),
+			'the old stored format'      => array( '+55 11 99999-9999', '(11) 99999-9999' ),
+			'E164'                       => array( '+5511999999999', '(11) 99999-9999' ),
+			'landline length'            => array( '(11) 3333-3333', '(11) 3333-3333' ),
+			'area code 55 is a real DDD' => array( '(55) 99999-9999', '(55) 99999-9999' ),
+		);
+	}
+
+	/**
+	 * Keeping the raw value lets validation show what the customer typed.
+	 */
+	public function test_format_cellphone_keeps_unparseable_input(): void {
+		$this->assertSame( '', Helpers::format_cellphone( '' ) );
+		$this->assertSame( 'abc', Helpers::format_cellphone( 'abc' ) );
+	}
+
+	/**
+	 * Otherwise the stored value drifts every time the customer reopens the
+	 * checkout.
+	 */
+	public function test_format_cellphone_is_idempotent(): void {
+		$once  = Helpers::format_cellphone( '+55 11 99999-9999' );
+		$twice = Helpers::format_cellphone( $once );
+
+		$this->assertSame( $once, $twice );
+	}
+
+	/**
+	 * @dataProvider cellphone_validity_provider
+	 */
+	public function test_is_valid_cellphone( string $input, bool $expected ): void {
+		$this->assertSame( $expected, Helpers::is_valid_cellphone( $input ) );
+	}
+
+	public function cellphone_validity_provider(): array {
+		return array(
+			'national'      => array( '(11) 99999-9999', true ),
+			'international' => array( '+55 11 99999-9999', true ),
+			'digits only'   => array( '11999999999', true ),
+			'empty'         => array( '', false ),
+			'letters'       => array( 'abc', false ),
+			'too short'     => array( '1199', false ),
+			'bad area code' => array( '(00) 99999-9999', false ),
+		);
+	}
 }

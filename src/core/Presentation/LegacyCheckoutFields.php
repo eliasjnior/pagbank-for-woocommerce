@@ -26,9 +26,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use libphonenumber\NumberParseException;
-use libphonenumber\PhoneNumberFormat;
-use libphonenumber\PhoneNumberUtil;
 use WC_Customer;
 use WP_Error;
 
@@ -650,7 +647,7 @@ class LegacyCheckoutFields {
 			return;
 		}
 
-		if ( ! self::is_valid_cellphone( $cellphone ) ) {
+		if ( ! Helpers::is_valid_cellphone( $cellphone ) ) {
 			$errors->add( 'billing_cellphone_validation', __( 'Número de celular inválido.', 'pagbank-for-woocommerce' ) );
 		}
 	}
@@ -663,25 +660,6 @@ class LegacyCheckoutFields {
 	private static function required_field_message( string $label ): string {
 		// translators: %s: field label.
 		return sprintf( __( '%s é um campo obrigatório.', 'pagbank-for-woocommerce' ), '<strong>' . $label . '</strong>' );
-	}
-
-	/**
-	 * Validate a Brazilian cellphone number.
-	 *
-	 * Mirrors the validation used by the Blocks `pagbank/cellphone` field.
-	 *
-	 * @param string $cellphone The cellphone number.
-	 */
-	private static function is_valid_cellphone( string $cellphone ): bool {
-		$phone_util = PhoneNumberUtil::getInstance();
-
-		try {
-			$phone_number = $phone_util->parse( $cellphone, 'BR' );
-
-			return $phone_util->isValidNumber( $phone_number );
-		} catch ( NumberParseException $e ) {
-			return false;
-		}
 	}
 
 	/**
@@ -720,9 +698,7 @@ class LegacyCheckoutFields {
 	}
 
 	/**
-	 * Normalize the posted cellphone value to the international format.
-	 *
-	 * Mirrors the sanitization used by the Blocks `pagbank/cellphone` field.
+	 * Normalize the posted cellphone value to the national format.
 	 *
 	 * @param mixed $value The posted value.
 	 *
@@ -733,15 +709,7 @@ class LegacyCheckoutFields {
 			return $value;
 		}
 
-		$phone_util = PhoneNumberUtil::getInstance();
-
-		try {
-			$phone_number = $phone_util->parse( $value, 'BR' );
-
-			return $phone_util->format( $phone_number, PhoneNumberFormat::INTERNATIONAL );
-		} catch ( NumberParseException $e ) {
-			return $value;
-		}
+		return Helpers::format_cellphone( $value );
 	}
 
 	/**

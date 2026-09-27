@@ -15,9 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields as WooCheckoutFields;
 use Automattic\WooCommerce\Blocks\Package;
-use libphonenumber\NumberParseException;
-use libphonenumber\PhoneNumberFormat;
-use libphonenumber\PhoneNumberUtil;
 use PagBank_WooCommerce\Presentation\Helpers;
 use PagBank_WooCommerce\Presentation\LegacyCheckoutFields;
 use WC_Order;
@@ -338,26 +335,10 @@ class CheckoutBlocksFields {
 					'show_in_order_confirmation' => false,
 					'required'                   => true,
 					'sanitize_callback'          => function ( $field_value ) {
-						$phone_util = PhoneNumberUtil::getInstance();
-
-						try {
-							$phone_number = $phone_util->parse( $field_value, 'BR' );
-
-							return $phone_util->format( $phone_number, PhoneNumberFormat::INTERNATIONAL );
-						} catch ( NumberParseException $e ) {
-							return $field_value;
-						}
+						return Helpers::format_cellphone( (string) $field_value );
 					},
 					'validate_callback'          => function ( $field_value ) {
-						$phone_util = PhoneNumberUtil::getInstance();
-
-						try {
-							$phone_number = $phone_util->parse( $field_value, 'BR' );
-
-							if ( ! $phone_util->isValidNumber( $phone_number ) ) {
-								return new WP_Error( 'invalid_cellphone', __( 'Número de celular inválido.', 'pagbank-for-woocommerce' ) );
-							}
-						} catch ( NumberParseException $e ) {
+						if ( ! Helpers::is_valid_cellphone( (string) $field_value ) ) {
 							return new WP_Error( 'invalid_cellphone', __( 'Número de celular inválido.', 'pagbank-for-woocommerce' ) );
 						}
 					},
