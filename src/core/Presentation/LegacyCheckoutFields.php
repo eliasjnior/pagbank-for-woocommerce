@@ -60,9 +60,14 @@ class LegacyCheckoutFields {
 	private bool $registered_document = false;
 
 	/**
-	 * Whether this plugin inserted the address fields in the current request.
+	 * Whether this plugin inserted the address number field in the current request.
 	 */
-	private bool $registered_address = false;
+	private bool $registered_number = false;
+
+	/**
+	 * Whether this plugin inserted the neighborhood field in the current request.
+	 */
+	private bool $registered_neighborhood = false;
 
 	/**
 	 * Whether this plugin inserted the cellphone field in the current request.
@@ -164,34 +169,82 @@ class LegacyCheckoutFields {
 	}
 
 	/**
+	 * Resolve which field groups a third-party plugin already provides.
+	 *
+	 * Pure transform (no WordPress state) so it can be unit tested. Each group
+	 * resolves on its own because the plugins gate them independently: Brazilian
+	 * Market adds the number and neighborhood unconditionally while LinkNacional
+	 * hides them behind settings that default to off, and LinkNacional has no
+	 * cellphone field at all, it manages the core `billing_phone` as the contact
+	 * field, so a separate Celular next to it duplicates the role.
+	 *
+	 * @param array $state Detected plugin state, see plugin_state().
+	 *
+	 * @return array{document:bool,number:bool,neighborhood:bool,cellphone:bool}
+	 */
+	public static function resolve_provides( array $state ): array {
+		$brazilian_market = ! empty( $state['brazilian_market'] );
+		$linknacional     = ! empty( $state['linknacional'] );
+		$bm_settings      = $state['brazilian_market_settings'] ?? null;
+
+		$bm_document  = $brazilian_market && self::brazilian_market_provides_document_fields( $bm_settings );
+		$bm_cellphone = $brazilian_market && self::brazilian_market_provides_cellphone_field( $bm_settings );
+
+		$ln_person_type  = (string) ( $state['linknacional_person_type'] ?? 'none' );
+		$ln_document     = $linknacional && self::linknacional_document_fields_enabled( $ln_person_type );
+		$ln_number       = $linknacional && 'yes' === (string) ( $state['linknacional_number'] ?? 'no' );
+		$ln_neighborhood = $linknacional && 'yes' === (string) ( $state['linknacional_neighborhood'] ?? 'no' );
+
+		return array(
+			'document'     => $bm_document || $ln_document,
+			'number'       => $brazilian_market || $ln_number,
+			'neighborhood' => $brazilian_market || $ln_neighborhood,
+			'cellphone'    => $bm_cellphone || $linknacional,
+		);
+	}
+
+	/**
+	 * Read the third-party plugin state from WordPress.
+	 *
+	 * @return array The state consumed by resolve_provides().
+	 */
+	public static function plugin_state(): array {
+		return array(
+			'brazilian_market'          => self::is_brazilian_market_active(),
+			'brazilian_market_settings' => get_option( 'wcbcf_settings' ),
+			'linknacional'              => self::is_linknacional_active(),
+			'linknacional_person_type'  => (string) get_option( 'woo_better_calc_person_type_select', 'none' ),
+			'linknacional_number'       => (string) get_option( 'woo_better_calc_number_required', 'no' ),
+			'linknacional_neighborhood' => (string) get_option( 'woo_better_calc_enable_neighborhood_field', 'no' ),
+		);
+	}
+
+	/**
 	 * Check if an active third-party plugin already provides the CPF/CNPJ fields.
 	 */
 	public static function external_provides_document_fields(): bool {
-		if ( self::is_brazilian_market_active() && self::brazilian_market_provides_document_fields( get_option( 'wcbcf_settings' ) ) ) {
-			return true;
-		}
-
-		return self::linknacional_provides_document_fields();
+		return self::external_provides_map()['document'];
 	}
 
 	/**
-	 * Check if an active third-party plugin already provides the address number/neighborhood fields.
-	 *
-	 * Both supported plugins always add these fields while active, regardless
-	 * of their person type settings.
+	 * Check if an active third-party plugin already provides the address number field.
 	 */
-	public static function external_provides_address_fields(): bool {
-		return self::is_brazilian_market_active() || self::is_linknacional_active();
+	public static function external_provides_number_field(): bool {
+		return self::external_provides_map()['number'];
 	}
 
 	/**
-	 * Check if an active third-party plugin already provides the cellphone field.
-	 *
-	 * Only the Brazilian Market plugin provides a cellphone field (behind its
-	 * `cell_phone` setting); the LinkNacional plugin does not.
+	 * Check if an active third-party plugin already provides the neighborhood field.
+	 */
+	public static function external_provides_neighborhood_field(): bool {
+		return self::external_provides_map()['neighborhood'];
+	}
+
+	/**
+	 * Check if an active third-party plugin already covers the cellphone role.
 	 */
 	public static function external_provides_cellphone_field(): bool {
-		return self::is_brazilian_market_active() && self::brazilian_market_provides_cellphone_field( get_option( 'wcbcf_settings' ) );
+		return self::external_provides_map()['cellphone'];
 	}
 
 	/**
@@ -259,7 +312,7 @@ class LegacyCheckoutFields {
 	 * was actually inserted by this plugin.
 	 *
 	 * @param array $fields   The billing fields array.
-	 * @param array $provides Which field groups are already provided externally: {document: bool, address: bool, cellphone: bool}.
+	 * @param array $provides Which field groups are already provided externally: {document: bool, number: bool, neighborhood: bool, cellphone: bool}.
 	 * @param bool  $required Whether the fields should be required (billing country is Brazil).
 	 */
 	public static function insert_billing_fields( array $fields, array $provides, bool $required ): array {
@@ -304,7 +357,7 @@ class LegacyCheckoutFields {
 			);
 		}
 
-		if ( empty( $provides['address'] ) ) {
+		if ( empty( $provides['number'] ) ) {
 			$new_fields['billing_number'] = array(
 				'label'    => __( 'Número', 'pagbank-for-woocommerce' ),
 				'type'     => 'text',
@@ -312,7 +365,9 @@ class LegacyCheckoutFields {
 				'required' => $required,
 				'priority' => 55,
 			);
+		}
 
+		if ( empty( $provides['neighborhood'] ) ) {
 			$new_fields['billing_neighborhood'] = array(
 				'label'    => __( 'Bairro', 'pagbank-for-woocommerce' ),
 				'type'     => 'text',
@@ -373,31 +428,32 @@ class LegacyCheckoutFields {
 	 *
 	 * Pure transform (no WordPress state) so it can be unit tested.
 	 *
-	 * @param array $fields            The shipping fields array.
-	 * @param bool  $external_provides Whether an external plugin already provides the address fields.
-	 * @param bool  $required          Whether the fields should be required (country is Brazil).
+	 * @param array $fields   The shipping fields array.
+	 * @param array $provides Which field groups are already provided externally: {number: bool, neighborhood: bool}.
+	 * @param bool  $required Whether the fields should be required (country is Brazil).
 	 */
-	public static function insert_shipping_fields( array $fields, bool $external_provides, bool $required ): array {
-		if ( $external_provides ) {
-			return $fields;
-		}
+	public static function insert_shipping_fields( array $fields, array $provides, bool $required ): array {
+		$new_fields = array();
 
-		$new_fields = array(
-			'shipping_number'       => array(
+		if ( empty( $provides['number'] ) ) {
+			$new_fields['shipping_number'] = array(
 				'label'    => __( 'Número', 'pagbank-for-woocommerce' ),
 				'type'     => 'text',
 				'class'    => array( 'form-row-first', 'address-field' ),
 				'required' => $required,
 				'priority' => 55,
-			),
-			'shipping_neighborhood' => array(
+			);
+		}
+
+		if ( empty( $provides['neighborhood'] ) ) {
+			$new_fields['shipping_neighborhood'] = array(
 				'label'    => __( 'Bairro', 'pagbank-for-woocommerce' ),
 				'type'     => 'text',
 				'class'    => array( 'form-row-last', 'address-field' ),
 				'required' => $required,
 				'priority' => 56,
-			),
-		);
+			);
+		}
 
 		foreach ( $new_fields as $key => $field ) {
 			if ( ! isset( $fields[ $key ] ) ) {
@@ -414,17 +470,14 @@ class LegacyCheckoutFields {
 	 * @param array $fields The billing fields.
 	 */
 	public function add_billing_fields( array $fields ): array {
-		$provides = array(
-			'document'  => self::external_provides_document_fields(),
-			'address'   => self::external_provides_address_fields(),
-			'cellphone' => self::external_provides_cellphone_field(),
-		);
+		$provides = self::external_provides_map();
 
 		$result = self::insert_billing_fields( $fields, $provides, self::customer_country_is_br() );
 
-		$this->registered_document  = isset( $result['billing_persontype'] ) && ! isset( $fields['billing_persontype'] );
-		$this->registered_address   = isset( $result['billing_number'] ) && ! isset( $fields['billing_number'] );
-		$this->registered_cellphone = isset( $result['billing_cellphone'] ) && ! isset( $fields['billing_cellphone'] );
+		$this->registered_document     = isset( $result['billing_persontype'] ) && ! isset( $fields['billing_persontype'] );
+		$this->registered_number       = isset( $result['billing_number'] ) && ! isset( $fields['billing_number'] );
+		$this->registered_neighborhood = isset( $result['billing_neighborhood'] ) && ! isset( $fields['billing_neighborhood'] );
+		$this->registered_cellphone    = isset( $result['billing_cellphone'] ) && ! isset( $fields['billing_cellphone'] );
 
 		return $result;
 	}
@@ -435,7 +488,16 @@ class LegacyCheckoutFields {
 	 * @param array $fields The shipping fields.
 	 */
 	public function add_shipping_fields( array $fields ): array {
-		return self::insert_shipping_fields( $fields, self::external_provides_address_fields(), self::customer_country_is_br() );
+		return self::insert_shipping_fields( $fields, self::external_provides_map(), self::customer_country_is_br() );
+	}
+
+	/**
+	 * Which field groups an active third-party plugin already provides.
+	 *
+	 * @return array{document:bool,number:bool,neighborhood:bool,cellphone:bool}
+	 */
+	public static function external_provides_map(): array {
+		return self::resolve_provides( self::plugin_state() );
 	}
 
 	/**
@@ -457,9 +519,7 @@ class LegacyCheckoutFields {
 			$this->validate_document_fields( $data, $errors );
 		}
 
-		if ( $this->registered_address ) {
-			$this->validate_address_fields( $data, $errors );
-		}
+		$this->validate_address_fields( $data, $errors );
 
 		if ( $this->registered_cellphone ) {
 			$this->validate_cellphone_field( $data, $errors );
@@ -556,10 +616,15 @@ class LegacyCheckoutFields {
 	 * @param WP_Error $errors The checkout validation errors.
 	 */
 	private function validate_address_fields( array $data, WP_Error $errors ): void {
-		$required_fields = array(
-			'billing_number'       => __( 'Número', 'pagbank-for-woocommerce' ),
-			'billing_neighborhood' => __( 'Bairro', 'pagbank-for-woocommerce' ),
-		);
+		$required_fields = array();
+
+		if ( $this->registered_number ) {
+			$required_fields['billing_number'] = __( 'Número', 'pagbank-for-woocommerce' );
+		}
+
+		if ( $this->registered_neighborhood ) {
+			$required_fields['billing_neighborhood'] = __( 'Bairro', 'pagbank-for-woocommerce' );
+		}
 
 		foreach ( $required_fields as $key => $label ) {
 			if ( '' === trim( (string) ( $data[ $key ] ?? '' ) ) && ! $errors->get_error_message( $key . '_required' ) ) {

@@ -76,9 +76,14 @@ class CheckoutBlocksFields {
 
 		wp_enqueue_style( 'pagbank-checkout-blocks-fields' );
 
-		// Input masks for the pagbank/* fields on the Blocks checkout. Skipped
-		// when the fields themselves are not registered (LinkNacional gating).
-		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() || LegacyCheckoutFields::linknacional_provides_document_fields() ) {
+		// Input masks for the pagbank/* fields on the Blocks checkout. Only the
+		// document and cellphone fields are masked, so the script is pointless
+		// when a third-party plugin provides both.
+		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+			return;
+		}
+
+		if ( self::blocks_provides_document_fields() && LegacyCheckoutFields::external_provides_cellphone_field() ) {
 			return;
 		}
 
@@ -157,127 +162,90 @@ class CheckoutBlocksFields {
 			return;
 		}
 
-		// The LinkNacional plugin registers its own Store API checkout fields
-		// (document, number, neighborhood); skip ours to avoid duplicates.
-		// The Brazilian Market plugin has no Blocks support, so its presence
-		// does not gate this registration.
-		if ( LegacyCheckoutFields::linknacional_provides_document_fields() ) {
-			return;
-		}
+		// Gated per group: LinkNacional covers document, number and neighborhood
+		// behind independent settings, so one of theirs being on must not suppress
+		// the rest of ours.
 
 		// Field indexes are relative to the BR locale scale pinned by
 		// pin_brazil_locale_priorities() (first_name 10, last_name 20,
 		// company 30, country 40, address_1 50, address_2 60, city 70,
 		// state 80, postcode 90, phone 100), which overrides the raw
 		// defaultFields indexes and is stable regardless of other plugins.
-		// Person type selector - shown only for Brazil. Mirrors the classic
-		// checkout experience: Pessoa física shows the CPF field; Pessoa
-		// jurídica shows the CNPJ and Razão Social fields. Rendered right
-		// after the country field, which drives its visibility.
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'                         => 'pagbank/persontype',
-				'index'                      => 41,
-				'label'                      => __( 'Tipo de pessoa', 'pagbank-for-woocommerce' ),
-				// The field is only visible when it is effectively required
-				// (Brazil), so never show the "(optional)" suffix.
-				'optionalLabel'              => __( 'Tipo de pessoa', 'pagbank-for-woocommerce' ),
-				'location'                   => 'address',
-				'type'                       => 'select',
-				'show_in_order_confirmation' => false,
-				'options'                    => array(
-					array(
-						'value' => '1',
-						'label' => __( 'Pessoa física', 'pagbank-for-woocommerce' ),
-					),
-					array(
-						'value' => '2',
-						'label' => __( 'Pessoa jurídica', 'pagbank-for-woocommerce' ),
-					),
-				),
-				'required'                   => self::rule_country_is_brazil(),
-				'hidden'                     => self::rule_country_is_not_brazil(),
-			)
-		);
 
-		// CPF - visible for Brazil while the person type is not legal person
-		// (an empty selection defaults to Pessoa física, like the classic
-		// checkout). Hidden fields are never required, so requiring for
-		// Brazil is enough.
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'                         => 'pagbank/cpf',
-				'index'                      => 42,
-				'label'                      => __( 'CPF', 'pagbank-for-woocommerce' ),
-				'optionalLabel'              => __( 'CPF', 'pagbank-for-woocommerce' ),
-				'location'                   => 'address',
-				'type'                       => 'text',
-				'show_in_order_confirmation' => false,
-				'required'                   => self::rule_country_is_brazil(),
-				'hidden'                     => array(
-					'anyOf' => array(
-						self::rule_country_is_not_brazil(),
-						self::rule_persontype_is_legal_person(),
-					),
-				),
-				'sanitize_callback'          => function ( $field_value ) {
-					$value = (string) $field_value;
-
-					return Helpers::is_valid_cpf( $value ) ? Helpers::format_cpf( $value ) : $field_value;
-				},
-				'validate_callback'          => function ( $field_value ) {
-					$value = (string) $field_value;
-
-					if ( '' !== $value && ! Helpers::is_valid_cpf( $value ) ) {
-						return new WP_Error( 'invalid_cpf', __( 'CPF inválido. Verifique os dígitos informados.', 'pagbank-for-woocommerce' ) );
-					}
-				},
-			)
-		);
-
-		// CNPJ - visible only for Brazil legal persons. Accepts the new
-		// alphanumeric format when the feature flag is enabled.
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'                         => 'pagbank/cnpj',
-				'index'                      => 43,
-				'label'                      => __( 'CNPJ', 'pagbank-for-woocommerce' ),
-				'optionalLabel'              => __( 'CNPJ', 'pagbank-for-woocommerce' ),
-				'location'                   => 'address',
-				'type'                       => 'text',
-				'show_in_order_confirmation' => false,
-				'required'                   => self::rule_country_is_brazil(),
-				'hidden'                     => array(
-					'anyOf' => array(
-						self::rule_country_is_not_brazil(),
-						self::rule_persontype_is_not_legal_person(),
-					),
-				),
-				'sanitize_callback'          => function ( $field_value ) {
-					$value = (string) $field_value;
-
-					return Helpers::is_valid_cnpj( $value ) ? Helpers::format_cnpj( $value ) : $field_value;
-				},
-				'validate_callback'          => function ( $field_value ) {
-					$value = (string) $field_value;
-
-					if ( '' !== $value && ! Helpers::is_valid_cnpj( $value ) ) {
-						return new WP_Error( 'invalid_cnpj', __( 'CNPJ inválido. Verifique os dígitos informados.', 'pagbank-for-woocommerce' ) );
-					}
-				},
-			)
-		);
-
-		// Razão Social - only when the store hides the core company field
-		// (otherwise the Blocks checkout already offers it). Visible only for
-		// Brazil legal persons.
-		if ( 'hidden' === get_option( 'woocommerce_checkout_company_field', 'optional' ) ) {
+		if ( ! self::blocks_provides_document_fields() ) {
+			// Person type selector - shown only for Brazil. Mirrors the classic
+			// checkout experience: Pessoa física shows the CPF field; Pessoa
+			// jurídica shows the CNPJ and Razão Social fields. Rendered right
+			// after the country field, which drives its visibility.
 			woocommerce_register_additional_checkout_field(
 				array(
-					'id'                         => 'pagbank/company',
-					'index'                      => 44,
-					'label'                      => __( 'Razão Social', 'pagbank-for-woocommerce' ),
-					'optionalLabel'              => __( 'Razão Social', 'pagbank-for-woocommerce' ),
+					'id'                         => 'pagbank/persontype',
+					'index'                      => 41,
+					'label'                      => __( 'Tipo de pessoa', 'pagbank-for-woocommerce' ),
+					// The field is only visible when it is effectively required
+					// (Brazil), so never show the "(optional)" suffix.
+					'optionalLabel'              => __( 'Tipo de pessoa', 'pagbank-for-woocommerce' ),
+					'location'                   => 'address',
+					'type'                       => 'select',
+					'show_in_order_confirmation' => false,
+					'options'                    => array(
+						array(
+							'value' => '1',
+							'label' => __( 'Pessoa física', 'pagbank-for-woocommerce' ),
+						),
+						array(
+							'value' => '2',
+							'label' => __( 'Pessoa jurídica', 'pagbank-for-woocommerce' ),
+						),
+					),
+					'required'                   => self::rule_country_is_brazil(),
+					'hidden'                     => self::rule_country_is_not_brazil(),
+				)
+			);
+
+			// CPF - visible for Brazil while the person type is not legal person
+			// (an empty selection defaults to Pessoa física, like the classic
+			// checkout). Hidden fields are never required, so requiring for
+			// Brazil is enough.
+			woocommerce_register_additional_checkout_field(
+				array(
+					'id'                         => 'pagbank/cpf',
+					'index'                      => 42,
+					'label'                      => __( 'CPF', 'pagbank-for-woocommerce' ),
+					'optionalLabel'              => __( 'CPF', 'pagbank-for-woocommerce' ),
+					'location'                   => 'address',
+					'type'                       => 'text',
+					'show_in_order_confirmation' => false,
+					'required'                   => self::rule_country_is_brazil(),
+					'hidden'                     => array(
+						'anyOf' => array(
+							self::rule_country_is_not_brazil(),
+							self::rule_persontype_is_legal_person(),
+						),
+					),
+					'sanitize_callback'          => function ( $field_value ) {
+						$value = (string) $field_value;
+
+						return Helpers::is_valid_cpf( $value ) ? Helpers::format_cpf( $value ) : $field_value;
+					},
+					'validate_callback'          => function ( $field_value ) {
+						$value = (string) $field_value;
+
+						if ( '' !== $value && ! Helpers::is_valid_cpf( $value ) ) {
+							return new WP_Error( 'invalid_cpf', __( 'CPF inválido. Verifique os dígitos informados.', 'pagbank-for-woocommerce' ) );
+						}
+					},
+				)
+			);
+
+			// CNPJ - visible only for Brazil legal persons. Accepts the new
+			// alphanumeric format when the feature flag is enabled.
+			woocommerce_register_additional_checkout_field(
+				array(
+					'id'                         => 'pagbank/cnpj',
+					'index'                      => 43,
+					'label'                      => __( 'CNPJ', 'pagbank-for-woocommerce' ),
+					'optionalLabel'              => __( 'CNPJ', 'pagbank-for-woocommerce' ),
 					'location'                   => 'address',
 					'type'                       => 'text',
 					'show_in_order_confirmation' => false,
@@ -288,73 +256,126 @@ class CheckoutBlocksFields {
 							self::rule_persontype_is_not_legal_person(),
 						),
 					),
+					'sanitize_callback'          => function ( $field_value ) {
+						$value = (string) $field_value;
+
+						return Helpers::is_valid_cnpj( $value ) ? Helpers::format_cnpj( $value ) : $field_value;
+					},
+					'validate_callback'          => function ( $field_value ) {
+						$value = (string) $field_value;
+
+						if ( '' !== $value && ! Helpers::is_valid_cnpj( $value ) ) {
+							return new WP_Error( 'invalid_cnpj', __( 'CNPJ inválido. Verifique os dígitos informados.', 'pagbank-for-woocommerce' ) );
+						}
+					},
+				)
+			);
+
+			// Razão Social - only when the store hides the core company field
+			// (otherwise the Blocks checkout already offers it). Visible only for
+			// Brazil legal persons.
+			if ( 'hidden' === get_option( 'woocommerce_checkout_company_field', 'optional' ) ) {
+				woocommerce_register_additional_checkout_field(
+					array(
+						'id'                         => 'pagbank/company',
+						'index'                      => 44,
+						'label'                      => __( 'Razão Social', 'pagbank-for-woocommerce' ),
+						'optionalLabel'              => __( 'Razão Social', 'pagbank-for-woocommerce' ),
+						'location'                   => 'address',
+						'type'                       => 'text',
+						'show_in_order_confirmation' => false,
+						'required'                   => self::rule_country_is_brazil(),
+						'hidden'                     => array(
+							'anyOf' => array(
+								self::rule_country_is_not_brazil(),
+								self::rule_persontype_is_not_legal_person(),
+							),
+						),
+					)
+				);
+			}
+		}
+
+		if ( ! LegacyCheckoutFields::external_provides_number_field() ) {
+			// Billing number - between address_1 (50) and address_2 (60).
+			woocommerce_register_additional_checkout_field(
+				array(
+					'id'                         => 'pagbank/address-number',
+					'index'                      => 51,
+					'label'                      => __( 'Número', 'pagbank-for-woocommerce' ),
+					'location'                   => 'address',
+					'type'                       => 'text',
+					'show_in_order_confirmation' => false,
+					'required'                   => true,
 				)
 			);
 		}
 
-		// Billing number - between address_1 (50) and address_2 (60).
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'                         => 'pagbank/address-number',
-				'index'                      => 51,
-				'label'                      => __( 'Número', 'pagbank-for-woocommerce' ),
-				'location'                   => 'address',
-				'type'                       => 'text',
-				'show_in_order_confirmation' => false,
-				'required'                   => true,
-			)
-		);
+		if ( ! LegacyCheckoutFields::external_provides_neighborhood_field() ) {
+			// Billing neighborhood.
+			woocommerce_register_additional_checkout_field(
+				array(
+					'id'                         => 'pagbank/neighborhood',
+					'index'                      => 52,
+					'label'                      => __( 'Bairro', 'pagbank-for-woocommerce' ),
+					'location'                   => 'address',
+					'type'                       => 'text',
+					'show_in_order_confirmation' => false,
+					'required'                   => true,
+				)
+			);
+		}
 
-		// Billing neighborhood.
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'                         => 'pagbank/neighborhood',
-				'index'                      => 52,
-				'label'                      => __( 'Bairro', 'pagbank-for-woocommerce' ),
-				'location'                   => 'address',
-				'type'                       => 'text',
-				'show_in_order_confirmation' => false,
-				'required'                   => true,
-			)
-		);
+		if ( ! LegacyCheckoutFields::external_provides_cellphone_field() ) {
+			// Cellphone - required, so it comes before the optional core phone (100).
+			woocommerce_register_additional_checkout_field(
+				array(
+					'id'                         => 'pagbank/cellphone',
+					'index'                      => 99,
+					'label'                      => __( 'Celular', 'pagbank-for-woocommerce' ),
+					'location'                   => 'address',
+					'type'                       => 'text',
+					'show_in_order_confirmation' => false,
+					'required'                   => true,
+					'sanitize_callback'          => function ( $field_value ) {
+						$phone_util = PhoneNumberUtil::getInstance();
 
-		// Cellphone - required, so it comes before the optional core phone (100).
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'                         => 'pagbank/cellphone',
-				'index'                      => 99,
-				'label'                      => __( 'Celular', 'pagbank-for-woocommerce' ),
-				'location'                   => 'address',
-				'type'                       => 'text',
-				'show_in_order_confirmation' => false,
-				'required'                   => true,
-				'sanitize_callback'          => function ( $field_value ) {
-					$phone_util = PhoneNumberUtil::getInstance();
+						try {
+							$phone_number = $phone_util->parse( $field_value, 'BR' );
 
-					try {
-						$phone_number = $phone_util->parse( $field_value, 'BR' );
+							return $phone_util->format( $phone_number, PhoneNumberFormat::INTERNATIONAL );
+						} catch ( NumberParseException $e ) {
+							return $field_value;
+						}
+					},
+					'validate_callback'          => function ( $field_value ) {
+						$phone_util = PhoneNumberUtil::getInstance();
 
-						return $phone_util->format( $phone_number, PhoneNumberFormat::INTERNATIONAL );
-					} catch ( NumberParseException $e ) {
-						return $field_value;
-					}
-				},
-				'validate_callback'          => function ( $field_value ) {
-					$phone_util = PhoneNumberUtil::getInstance();
+						try {
+							$phone_number = $phone_util->parse( $field_value, 'BR' );
 
-					try {
-						$phone_number = $phone_util->parse( $field_value, 'BR' );
-
-						if ( ! $phone_util->isValidNumber( $phone_number ) ) {
+							if ( ! $phone_util->isValidNumber( $phone_number ) ) {
+								return new WP_Error( 'invalid_cellphone', __( 'Número de celular inválido.', 'pagbank-for-woocommerce' ) );
+							}
+						} catch ( NumberParseException $e ) {
 							return new WP_Error( 'invalid_cellphone', __( 'Número de celular inválido.', 'pagbank-for-woocommerce' ) );
 						}
-					} catch ( NumberParseException $e ) {
-						return new WP_Error( 'invalid_cellphone', __( 'Número de celular inválido.', 'pagbank-for-woocommerce' ) );
-					}
-				},
-			)
-		);
+					},
+				)
+			);
+		}
 	}
+
+	/**
+	 * Whether a third-party plugin already provides the document fields on Blocks.
+	 *
+	 * Only LinkNacional registers Store API document fields; the Brazilian
+	 * Market plugin is classic-checkout only, so it never gates Blocks.
+	 */
+	private static function blocks_provides_document_fields(): bool {
+		return LegacyCheckoutFields::linknacional_provides_document_fields();
+	}
+
 
 	/**
 	 * Default the person type to Pessoa física on the checkout page.
@@ -370,9 +391,7 @@ class CheckoutBlocksFields {
 			return;
 		}
 
-		// The document fields are not registered when the LinkNacional plugin
-		// provides its own (see register_additional_checkout_fields).
-		if ( LegacyCheckoutFields::linknacional_provides_document_fields() ) {
+		if ( self::blocks_provides_document_fields() ) {
 			return;
 		}
 

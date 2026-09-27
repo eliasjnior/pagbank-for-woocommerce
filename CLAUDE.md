@@ -230,9 +230,20 @@ The plugin ships its own Brazil-specific checkout fields — no external plugin 
 
 Interop meta contract (shared with third-party plugins): order meta `_billing_persontype` ('1' = CPF, '2' = CNPJ), `_billing_cpf`, `_billing_cnpj`, `_billing_number`, `_billing_neighborhood`, `_billing_cellphone`; customer meta uses the same keys without the leading underscore.
 
-Third-party deference (per field group, checked in `LegacyCheckoutFields`):
+Third-party deference is resolved **per field group**, never per plugin: `LegacyCheckoutFields::resolve_provides()` is a pure function mapping the detected plugin state to `{document, number, neighborhood, cellphone}`, and `plugin_state()` reads that state from the options. Both checkouts consume the same map, so classic and Blocks always agree. Deferring on a whole plugin would leave the checkout without the groups that plugin does not actually add, which is how an address could reach PagBank with no number.
+
+Per group, per plugin:
+
+| Group | Brazilian Market | LinkNacional |
+| --- | --- | --- |
+| document (persontype/CPF/CNPJ) | `wcbcf_settings['person_type'] !== 0` | `woo_better_calc_person_type_select !== 'none'` |
+| address number | always, while active | `woo_better_calc_number_required === 'yes'` (default `no`) |
+| neighborhood | always, while active | `woo_better_calc_enable_neighborhood_field === 'yes'` (default `no`) |
+| cellphone | `wcbcf_settings['cell_phone']` in `1`/`2` (own field) or `-1` (relabels the core phone) | no field of its own; it manages the core `billing_phone` as the contact field, so our Celular duplicates the role whenever it is active |
+
+Plugin detection:
 - **Brazilian Market on WooCommerce** (`woocommerce-extra-checkout-fields-for-brazil`): detected via `class_exists( 'Extra_Checkout_Fields_For_Brazil' )` — never use `Extra_Checkout_Fields_For_Brazil_Front_End` (the LinkNacional plugin ships a stub of it). Settings option: `wcbcf_settings` (`person_type` 0=off/1=both/2=CPF/3=CNPJ, `cell_phone`). Classic checkout only (no Blocks support). Deprecated path: when active, a dismissible admin notice (`LegacyCheckoutFields::maybe_render_brazilian_market_deprecation_notice`) recommends deactivating it — the plugin is unmaintained (no alphanumeric CNPJ support) and compatibility will eventually be dropped. Dismissing stores a per-user timestamp (AJAX + user meta) that snoozes the notice for 24h; it reappears while the plugin stays active.
-- **Calculadora de Frete e Campos Checkout para o Brasil** (LinkNacional, `woo-better-shipping-calculator-for-brazil`): detected via `defined( 'WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION' )`. Option: `woo_better_calc_person_type_select` (`none|physical|legal|both`). Supports Blocks — when active with person type enabled, the `pagbank/*` Blocks fields are not registered.
+- **Calculadora de Frete e Campos Checkout para o Brasil** (LinkNacional, `woo-better-shipping-calculator-for-brazil`): detected via `defined( 'WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION' )`. Option: `woo_better_calc_person_type_select` (`none|physical|legal|both`). Supports Blocks via its own Store API `extensions` namespaces (`woo_better_person_type`, `woo_better_number_validation`, `woo_better_neighborhood`), writing the same `_billing_*` interop meta, gated by the same options as the classic checkout. It registers no cellphone field on either checkout.
 
 When either plugin provides a field group, the native fields for that group are not inserted. `ApiHelpers` reads the Blocks additional fields first and falls back to the legacy `_billing_*` meta, so every combination resolves.
 
