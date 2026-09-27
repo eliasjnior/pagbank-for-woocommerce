@@ -301,7 +301,13 @@ Caso o lojista não possua o identificador da conta preenchido, os produtos cada
 * Corrigido cálculo do total no Checkout PagBank, incluindo o frete corretamente.
 * Melhorado registro de logs da API, mantendo o reference_id para facilitar o rastreamento.
 
-### 2.0.3 - 2026-08-25 ###
-* Corrigido erro fatal no envio de e-mails do WooCommerce, que podia derrubar a loja a cada mudança de status do pedido — inclusive em pedidos pagos por outros meios de pagamento.
+### 2.0.3 - 2026-09-27 ###
+* Adicionado análise de risco (antifraude) nos pagamentos com Pix, mantendo o pedido aguardando confirmação enquanto a análise ocorre.
 * Adicionado filtro `pagbank_payment_instructions_email_ids`, que permite a outros plugins exibir as instruções de Pix e boleto em seus próprios e-mails.
+* Melhorado a robustez da página de confirmação do pedido diante de mudanças internas do WooCommerce.
+* Corrigido erro fatal no envio de e-mails do WooCommerce.
+* Corrigido compatibilidade com a Calculadora de Frete e Campos Checkout para o Brasil.
+* Corrigido formato do celular salvo.
+* Corrigido layout.
+* Corrigido versão mínima do WooCommerce declarada pelo plugin.
 * Atualizado a compatibilidade declarada para WordPress 7.1 e WooCommerce 11.0.
