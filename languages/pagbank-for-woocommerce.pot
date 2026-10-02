@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-25T23:36:00+00:00\n"
+"POT-Creation-Date: 2026-10-02T10:39:56+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pagbank-for-woocommerce\n"
@@ -32,7 +32,7 @@ msgstr ""
 #. Author of the plugin
 #: pagbank-for-woocommerce.php
 #: src/core/Marketplace/WcfmIntegration.php:275
-#: src/core/Presentation/ApiHelpers.php:595
+#: src/core/Presentation/ApiHelpers.php:634
 msgid "PagBank"
 msgstr ""
 
@@ -56,7 +56,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:68
 #: src/core/Gateways/GooglePayPaymentGateway.php:86
 #: src/core/Gateways/PayWithPagBankGateway.php:91
-#: src/core/Gateways/PixPaymentGateway.php:91
+#: src/core/Gateways/PixPaymentGateway.php:92
 msgid "Habilitar/Desabilitar"
 msgstr ""
 
@@ -71,7 +71,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:74
 #: src/core/Gateways/GooglePayPaymentGateway.php:92
 #: src/core/Gateways/PayWithPagBankGateway.php:97
-#: src/core/Gateways/PixPaymentGateway.php:97
+#: src/core/Gateways/PixPaymentGateway.php:98
 #: dist/admin/gateway-settings.js:1
 msgid "Ambiente"
 msgstr ""
@@ -83,7 +83,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:76
 #: src/core/Gateways/GooglePayPaymentGateway.php:94
 #: src/core/Gateways/PayWithPagBankGateway.php:99
-#: src/core/Gateways/PixPaymentGateway.php:99
+#: src/core/Gateways/PixPaymentGateway.php:100
 msgid "Isso irá definir o ambiente de testes ou produção."
 msgstr ""
 
@@ -94,7 +94,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:79
 #: src/core/Gateways/GooglePayPaymentGateway.php:97
 #: src/core/Gateways/PayWithPagBankGateway.php:102
-#: src/core/Gateways/PixPaymentGateway.php:102
+#: src/core/Gateways/PixPaymentGateway.php:103
 msgid "Ambiente de testes"
 msgstr ""
 
@@ -105,7 +105,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:80
 #: src/core/Gateways/GooglePayPaymentGateway.php:98
 #: src/core/Gateways/PayWithPagBankGateway.php:103
-#: src/core/Gateways/PixPaymentGateway.php:103
+#: src/core/Gateways/PixPaymentGateway.php:104
 #: dist/admin/gateway-settings.js:1
 msgid "Produção"
 msgstr ""
@@ -117,7 +117,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:85
 #: src/core/Gateways/GooglePayPaymentGateway.php:103
 #: src/core/Gateways/PayWithPagBankGateway.php:108
-#: src/core/Gateways/PixPaymentGateway.php:108
+#: src/core/Gateways/PixPaymentGateway.php:109
 msgid "Conta PagBank"
 msgstr ""
 
@@ -128,7 +128,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:87
 #: src/core/Gateways/GooglePayPaymentGateway.php:105
 #: src/core/Gateways/PayWithPagBankGateway.php:110
-#: src/core/Gateways/PixPaymentGateway.php:110
+#: src/core/Gateways/PixPaymentGateway.php:111
 msgid "Conecte a sua conta PagBank para aceitar pagamentos."
 msgstr ""
 
@@ -139,7 +139,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:90
 #: src/core/Gateways/GooglePayPaymentGateway.php:108
 #: src/core/Gateways/PayWithPagBankGateway.php:113
-#: src/core/Gateways/PixPaymentGateway.php:113
+#: src/core/Gateways/PixPaymentGateway.php:114
 #: dist/admin/gateway-settings.js:1
 msgid "Título"
 msgstr ""
@@ -151,7 +151,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:92
 #: src/core/Gateways/GooglePayPaymentGateway.php:110
 #: src/core/Gateways/PayWithPagBankGateway.php:115
-#: src/core/Gateways/PixPaymentGateway.php:115
+#: src/core/Gateways/PixPaymentGateway.php:116
 msgid "Isso irá controlar o título que o cliente verá durante o checkout."
 msgstr ""
 
@@ -168,7 +168,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:97
 #: src/core/Gateways/GooglePayPaymentGateway.php:115
 #: src/core/Gateways/PayWithPagBankGateway.php:120
-#: src/core/Gateways/PixPaymentGateway.php:120
+#: src/core/Gateways/PixPaymentGateway.php:121
 #: dist/admin/gateway-settings.js:1
 msgid "Descrição"
 msgstr ""
@@ -180,7 +180,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:99
 #: src/core/Gateways/GooglePayPaymentGateway.php:117
 #: src/core/Gateways/PayWithPagBankGateway.php:122
-#: src/core/Gateways/PixPaymentGateway.php:122
+#: src/core/Gateways/PixPaymentGateway.php:123
 msgid "Isso irá controlar a descrição que o cliente verá durante o checkout."
 msgstr ""
 
@@ -195,7 +195,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:104
 #: src/core/Gateways/GooglePayPaymentGateway.php:122
 #: src/core/Gateways/PayWithPagBankGateway.php:127
-#: src/core/Gateways/PixPaymentGateway.php:137
+#: src/core/Gateways/PixPaymentGateway.php:138
 msgid "Logs para depuração"
 msgstr ""
 
@@ -206,7 +206,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:106
 #: src/core/Gateways/GooglePayPaymentGateway.php:124
 #: src/core/Gateways/PayWithPagBankGateway.php:129
-#: src/core/Gateways/PixPaymentGateway.php:139
+#: src/core/Gateways/PixPaymentGateway.php:140
 msgid "Ativar logs"
 msgstr ""
 
@@ -217,7 +217,7 @@ msgstr ""
 #: src/core/Gateways/DebitCardPaymentGateway.php:107
 #: src/core/Gateways/GooglePayPaymentGateway.php:125
 #: src/core/Gateways/PayWithPagBankGateway.php:130
-#: src/core/Gateways/PixPaymentGateway.php:140
+#: src/core/Gateways/PixPaymentGateway.php:141
 msgid "Isso irá ativar os logs para depuração para auxiliar em caso de suporte."
 msgstr ""
 
@@ -236,7 +236,6 @@ msgstr ""
 #: src/core/Gateways/PayWithPagBankGateway.php:178
 #: src/core/Gateways/PayWithPagBankGateway.php:182
 #: src/core/Gateways/PixPaymentGateway.php:179
-#: src/core/Gateways/PixPaymentGateway.php:183
 #: src/core/Presentation/Blocks/ApplePayBlocksSupport.php:123
 #: src/core/Presentation/Blocks/GooglePayBlocksSupport.php:123
 msgid "Houve um erro ao processar o pagamento. Tente novamente."
@@ -258,7 +257,7 @@ msgstr ""
 #: src/core/Gateways/CreditCardPaymentGateway.php:1277
 #: src/core/Gateways/GooglePayPaymentGateway.php:233
 #: src/core/Gateways/PayWithPagBankGateway.php:229
-#: src/core/Gateways/PixPaymentGateway.php:228
+#: src/core/Gateways/PixPaymentGateway.php:263
 msgid "Houve um erro desconhecido ao tentar realizar o reembolso."
 msgstr ""
 
@@ -267,7 +266,7 @@ msgstr ""
 #: src/core/Gateways/CheckoutPaymentGateway.php:338
 #: src/core/Gateways/CreditCardPaymentGateway.php:1324
 #: src/core/Gateways/PayWithPagBankGateway.php:362
-#: src/core/Gateways/PixPaymentGateway.php:343
+#: src/core/Gateways/PixPaymentGateway.php:427
 msgid "- O método de pagamento está desabilitado."
 msgstr ""
 
@@ -276,7 +275,7 @@ msgstr ""
 #: src/core/Gateways/CheckoutPaymentGateway.php:342
 #: src/core/Gateways/CreditCardPaymentGateway.php:1328
 #: src/core/Gateways/PayWithPagBankGateway.php:366
-#: src/core/Gateways/PixPaymentGateway.php:347
+#: src/core/Gateways/PixPaymentGateway.php:431
 msgid "- A sua conta PagBank não está conectada."
 msgstr ""
 
@@ -285,7 +284,7 @@ msgstr ""
 #: src/core/Gateways/CheckoutPaymentGateway.php:346
 #: src/core/Gateways/CreditCardPaymentGateway.php:1332
 #: src/core/Gateways/PayWithPagBankGateway.php:370
-#: src/core/Gateways/PixPaymentGateway.php:351
+#: src/core/Gateways/PixPaymentGateway.php:435
 msgid "- A moeda da loja não é BRL."
 msgstr ""
 
@@ -299,7 +298,7 @@ msgstr ""
 #: src/core/Gateways/CreditCardPaymentGateway.php:1336
 #: src/core/Gateways/GooglePayPaymentGateway.php:323
 #: src/core/Gateways/PayWithPagBankGateway.php:374
-#: src/core/Gateways/PixPaymentGateway.php:355
+#: src/core/Gateways/PixPaymentGateway.php:439
 msgid "Alguns errors podem estar impedindo o método de pagamento de ser exibido durante o checkout:"
 msgstr ""
 
@@ -562,7 +561,7 @@ msgstr ""
 
 #. translators: %1$d: number of installments, %2$s: installment value.
 #: src/core/Gateways/CreditCardPaymentGateway.php:500
-#: src/core/Presentation/ApiHelpers.php:974
+#: src/core/Presentation/ApiHelpers.php:1013
 #: dist/public/blocks/checkout-credit-card.js:3
 #, php-format,js-format
 msgid "%1$dx de %2$s sem juros"
@@ -676,6 +675,7 @@ msgstr ""
 #: src/core/Gateways/CreditCardPaymentGateway.php:1107
 #: src/core/Gateways/CreditCardPaymentGateway.php:1111
 #: src/core/Gateways/CreditCardPaymentGateway.php:1400
+#: src/core/Gateways/PixPaymentGateway.php:221
 #: src/core/Presentation/WebhookHandler.php:391
 msgid "O pagamento foi recusado."
 msgstr ""
@@ -777,39 +777,49 @@ msgstr ""
 msgid "Aguardando pagamento via PagBank."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:58
+#: src/core/Gateways/PixPaymentGateway.php:59
 msgid "PagBank Pix"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:60
+#: src/core/Gateways/PixPaymentGateway.php:61
 msgid "Aceite pagamentos via Pix com QR code e código copia e cola exibidos na página do pedido e no e-mail do cliente. Tempo de expiração configurável, confirmação automática via webhook e reembolso online total ou parcial. É necessário ter uma chave Pix cadastrada na sua conta PagBank."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:93
+#: src/core/Gateways/PixPaymentGateway.php:94
 msgid "Habilitar Pix"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:116
+#: src/core/Gateways/PixPaymentGateway.php:117
 #: src/core/Presentation/Blocks/PixBlocksSupport.php:100
 #: dist/admin/gateway-settings.js:1
 msgid "Pix"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:123
+#: src/core/Gateways/PixPaymentGateway.php:124
 #: src/core/Presentation/Blocks/PixBlocksSupport.php:101
 msgid "O código Pix será gerado assim que você finalizar o pedido."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:127
+#: src/core/Gateways/PixPaymentGateway.php:128
 msgid "Expiração em minutos"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:129
+#: src/core/Gateways/PixPaymentGateway.php:130
 msgid "Isso irá controlar o tempo em minutos que o Pix será válido."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:191
+#: src/core/Gateways/PixPaymentGateway.php:197
+msgid "Não foi possível gerar o Pix. Tente novamente."
+msgstr ""
+
+#: src/core/Gateways/PixPaymentGateway.php:210
 msgid "Aguardando pagamento do Pix."
+msgstr ""
+
+#. translators: %1$s: response code, %2$s: response message.
+#: src/core/Gateways/PixPaymentGateway.php:329
+#, php-format
+msgid "Análise de risco do Pix: %1$s - %2$s"
 msgstr ""
 
 #: src/core/Marketplace/WcfmIntegration.php:322
@@ -817,147 +827,148 @@ msgid "Você não pode reembolsar um pedido que possui comissões de vendedores.
 msgstr ""
 
 #. translators: %s: CNPJ number.
-#: src/core/Presentation/AddressFormatting.php:286
+#: src/core/Presentation/AddressFormatting.php:295
 #, php-format
 msgid "CNPJ: %s"
 msgstr ""
 
 #. translators: %s: CPF number.
-#: src/core/Presentation/AddressFormatting.php:290
+#: src/core/Presentation/AddressFormatting.php:299
 #, php-format
 msgid "CPF: %s"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:208
-#: src/core/Presentation/AdminOrderFields.php:252
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:300
-#: src/core/Presentation/LegacyCheckoutFields.php:309
-#: src/core/Presentation/LegacyCheckoutFields.php:387
-#: src/core/Presentation/LegacyCheckoutFields.php:560
+#: src/core/Presentation/AdminOrderFields.php:207
+#: src/core/Presentation/AdminOrderFields.php:256
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:302
+#: src/core/Presentation/LegacyCheckoutFields.php:359
+#: src/core/Presentation/LegacyCheckoutFields.php:437
+#: src/core/Presentation/LegacyCheckoutFields.php:619
 msgid "Número"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:209
-#: src/core/Presentation/AdminOrderFields.php:253
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:313
-#: src/core/Presentation/LegacyCheckoutFields.php:317
-#: src/core/Presentation/LegacyCheckoutFields.php:394
-#: src/core/Presentation/LegacyCheckoutFields.php:561
+#: src/core/Presentation/AdminOrderFields.php:211
+#: src/core/Presentation/AdminOrderFields.php:260
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:317
+#: src/core/Presentation/LegacyCheckoutFields.php:369
+#: src/core/Presentation/LegacyCheckoutFields.php:447
+#: src/core/Presentation/LegacyCheckoutFields.php:623
 msgid "Bairro"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:234
+#: src/core/Presentation/AdminOrderFields.php:238
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:181
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:184
-#: src/core/Presentation/LegacyCheckoutFields.php:270
+#: src/core/Presentation/LegacyCheckoutFields.php:320
 msgid "Tipo de pessoa"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:237
+#: src/core/Presentation/AdminOrderFields.php:241
 msgid "Selecionar"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:238
+#: src/core/Presentation/AdminOrderFields.php:242
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:191
-#: src/core/Presentation/LegacyCheckoutFields.php:277
+#: src/core/Presentation/LegacyCheckoutFields.php:327
 msgid "Pessoa física"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:239
+#: src/core/Presentation/AdminOrderFields.php:243
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:195
-#: src/core/Presentation/LegacyCheckoutFields.php:278
+#: src/core/Presentation/LegacyCheckoutFields.php:328
 msgid "Pessoa jurídica"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:242
-#: src/core/Presentation/AdminOrderFields.php:316
+#: src/core/Presentation/AdminOrderFields.php:246
+#: src/core/Presentation/AdminOrderFields.php:323
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:211
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:212
-#: src/core/Presentation/LegacyCheckoutFields.php:286
-#: src/core/Presentation/LegacyCheckoutFields.php:546
+#: src/core/Presentation/LegacyCheckoutFields.php:336
+#: src/core/Presentation/LegacyCheckoutFields.php:603
 msgid "CPF"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:243
-#: src/core/Presentation/AdminOrderFields.php:316
+#: src/core/Presentation/AdminOrderFields.php:247
+#: src/core/Presentation/AdminOrderFields.php:323
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:244
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:245
-#: src/core/Presentation/LegacyCheckoutFields.php:297
-#: src/core/Presentation/LegacyCheckoutFields.php:530
+#: src/core/Presentation/LegacyCheckoutFields.php:347
+#: src/core/Presentation/LegacyCheckoutFields.php:587
 msgid "CNPJ"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:247
+#: src/core/Presentation/AdminOrderFields.php:251
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:279
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:280
-#: src/core/Presentation/LegacyCheckoutFields.php:352
-#: src/core/Presentation/LegacyCheckoutFields.php:358
-#: src/core/Presentation/LegacyCheckoutFields.php:536
+#: src/core/Presentation/LegacyCheckoutFields.php:404
+#: src/core/Presentation/LegacyCheckoutFields.php:410
+#: src/core/Presentation/LegacyCheckoutFields.php:593
 msgid "Razão Social"
 msgstr ""
 
-#: src/core/Presentation/AdminOrderFields.php:257
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:326
-#: src/core/Presentation/LegacyCheckoutFields.php:327
-#: src/core/Presentation/LegacyCheckoutFields.php:582
+#: src/core/Presentation/AdminOrderFields.php:264
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:332
+#: src/core/Presentation/LegacyCheckoutFields.php:379
+#: src/core/Presentation/LegacyCheckoutFields.php:644
 msgid "Celular"
 msgstr ""
 
-#: src/core/Presentation/Api.php:173
+#: src/core/Presentation/Api.php:174
 msgid "O ambiente é inválido."
 msgstr ""
 
-#: src/core/Presentation/Api.php:177
+#: src/core/Presentation/Api.php:178
 msgid "O código de verificação é inválido."
 msgstr ""
 
-#: src/core/Presentation/Api.php:183
+#: src/core/Presentation/Api.php:184
 msgid "ID da aplicação inválida."
 msgstr ""
 
-#: src/core/Presentation/Api.php:229
-#: src/core/Presentation/Api.php:297
+#: src/core/Presentation/Api.php:230
+#: src/core/Presentation/Api.php:298
 msgid "Status HTTP inválido."
 msgstr ""
 
-#: src/core/Presentation/Api.php:259
+#: src/core/Presentation/Api.php:260
 msgid "O ID da aplicação é inválido."
 msgstr ""
 
 #. translators: %1$s: order id, %2$s: blog name.
-#: src/core/Presentation/ApiHelpers.php:586
-#: src/core/Presentation/ApiHelpers.php:634
-#: src/core/Presentation/ApiHelpers.php:676
-#: src/core/Presentation/ApiHelpers.php:765
-#: src/core/Presentation/ApiHelpers.php:922
+#: src/core/Presentation/ApiHelpers.php:403
+#: src/core/Presentation/ApiHelpers.php:625
+#: src/core/Presentation/ApiHelpers.php:673
+#: src/core/Presentation/ApiHelpers.php:715
+#: src/core/Presentation/ApiHelpers.php:804
+#: src/core/Presentation/ApiHelpers.php:961
 #, php-format
 msgid "Pedido %1$s - %2$s"
 msgstr ""
 
 #. translators: %s: blog name.
-#: src/core/Presentation/ApiHelpers.php:594
+#: src/core/Presentation/ApiHelpers.php:633
 #, php-format
 msgid "Pagamento para %s"
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:796
+#: src/core/Presentation/ApiHelpers.php:835
 msgid "O cartão criptografado é inválido. Por favor, contate o suporte."
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:815
+#: src/core/Presentation/ApiHelpers.php:854
 msgid "O token de pagamento não foi encontrado."
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:891
+#: src/core/Presentation/ApiHelpers.php:930
 msgid "Assinatura"
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:996
+#: src/core/Presentation/ApiHelpers.php:1035
 msgid "O valor para reembolso deve ser maior que zero"
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:1012
-#: src/core/Presentation/ApiHelpers.php:1014
+#: src/core/Presentation/ApiHelpers.php:1051
+#: src/core/Presentation/ApiHelpers.php:1053
 msgid "Houve um erro ao tentar realizar o reembolso."
 msgstr ""
 
@@ -970,20 +981,19 @@ msgid "Não foi possível obter o token de pagamento do Apple Pay."
 msgstr ""
 
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:232
-#: src/core/Presentation/Helpers.php:352
-#: src/core/Presentation/LegacyCheckoutFields.php:548
+#: src/core/Presentation/Helpers.php:388
+#: src/core/Presentation/LegacyCheckoutFields.php:605
 msgid "CPF inválido. Verifique os dígitos informados."
 msgstr ""
 
 #: src/core/Presentation/Blocks/CheckoutBlocksFields.php:265
-#: src/core/Presentation/Helpers.php:354
-#: src/core/Presentation/LegacyCheckoutFields.php:532
+#: src/core/Presentation/Helpers.php:390
+#: src/core/Presentation/LegacyCheckoutFields.php:589
 msgid "CNPJ inválido. Verifique os dígitos informados."
 msgstr ""
 
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:349
-#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:352
-#: src/core/Presentation/LegacyCheckoutFields.php:589
+#: src/core/Presentation/Blocks/CheckoutBlocksFields.php:342
+#: src/core/Presentation/LegacyCheckoutFields.php:651
 msgid "Número de celular inválido."
 msgstr ""
 
@@ -1052,7 +1062,7 @@ msgstr ""
 msgid "Erro ao obter a chave pública. Por favor, tente novamente."
 msgstr ""
 
-#: src/core/Presentation/Helpers.php:356
+#: src/core/Presentation/Helpers.php:392
 msgid "CPF/CNPJ inválido. Informe 11 dígitos para CPF ou 14 para CNPJ."
 msgstr ""
 
@@ -1066,24 +1076,24 @@ msgstr ""
 msgid "Configurações"
 msgstr ""
 
-#: src/core/Presentation/LegacyCheckoutFields.php:219
+#: src/core/Presentation/LegacyCheckoutFields.php:269
 msgid "PagBank para WooCommerce:"
 msgstr ""
 
-#: src/core/Presentation/LegacyCheckoutFields.php:220
+#: src/core/Presentation/LegacyCheckoutFields.php:270
 msgid "o plugin \"Brazilian Market on WooCommerce\" está ativo, mas não é mais necessário e a compatibilidade com ele será descontinuada."
 msgstr ""
 
-#: src/core/Presentation/LegacyCheckoutFields.php:221
+#: src/core/Presentation/LegacyCheckoutFields.php:271
 msgid "O PagBank já fornece os campos de CPF/CNPJ (incluindo o novo CNPJ alfanumérico), número, bairro e celular no checkout. Recomendamos desativá-lo."
 msgstr ""
 
-#: src/core/Presentation/LegacyCheckoutFields.php:223
+#: src/core/Presentation/LegacyCheckoutFields.php:273
 msgid "Gerenciar plugins"
 msgstr ""
 
 #. translators: %s: field label.
-#: src/core/Presentation/LegacyCheckoutFields.php:600
+#: src/core/Presentation/LegacyCheckoutFields.php:662
 #, php-format
 msgid "%s é um campo obrigatório."
 msgstr ""
