@@ -308,6 +308,7 @@ Caso o lojista não possua o identificador da conta preenchido, os produtos cada
 * Corrigido erro fatal no envio de e-mails do WooCommerce.
 * Corrigido compatibilidade com a Calculadora de Frete e Campos Checkout para o Brasil.
 * Corrigido formato do celular salvo.
+* Corrigido boleto recusado quando o e-mail do cliente possui letras maiúsculas.
 * Corrigido layout.
 * Corrigido versão mínima do WooCommerce declarada pelo plugin.
 * Atualizado a compatibilidade declarada para WordPress 7.1 e WooCommerce 11.0.
