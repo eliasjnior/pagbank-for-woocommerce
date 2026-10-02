@@ -47,6 +47,28 @@ class ApiHelpersTest extends TestCase {
 	}
 
 	/**
+	 * The boleto holder e-mail is rejected with 40002 on any capital letter.
+	 *
+	 * @dataProvider sanitize_email_provider
+	 */
+	public function test_sanitize_pagbank_email_normalizes_case_and_spacing( string $input, string $expected ): void {
+		$this->assertSame( $expected, ApiHelpers::sanitize_pagbank_email( $input ) );
+	}
+
+	public function sanitize_email_provider(): array {
+		return array(
+			'lowercase unchanged'  => array( 'john.doe@example.com', 'john.doe@example.com' ),
+			'capitalized local'    => array( 'John.Doe@example.com', 'john.doe@example.com' ),
+			'uppercase domain'     => array( 'john.doe@EXAMPLE.COM', 'john.doe@example.com' ),
+			'all uppercase'        => array( 'JOHN.DOE@EXAMPLE.COM', 'john.doe@example.com' ),
+			'surrounding spaces'   => array( '  John.Doe@Example.com  ', 'john.doe@example.com' ),
+			'plus addressing kept' => array( 'John+Store@example.com', 'john+store@example.com' ),
+			'subdomain and dashes' => array( 'Jo-Hn@Mail.Example.co.uk', 'jo-hn@mail.example.co.uk' ),
+			'empty string'         => array( '', '' ),
+		);
+	}
+
+	/**
 	 * Two requests with the same payment intent must produce the same key
 	 * so the PagBank API can dedupe them server-side.
 	 */

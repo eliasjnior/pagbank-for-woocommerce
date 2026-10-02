@@ -622,11 +622,11 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 		return array(
 			'amount_cents'   => Helpers::format_money_cents( $total ),
 			'customer'       => array(
-				// Names sent to PagBank must match the sanitization the order
-				// API applies (drops non-letter/digit/space). Sanitizing in
-				// the snapshot keeps the 3DS payload consistent.
+				// Name and e-mail take the same normalization the order API
+				// applies, so the 3DS payload and the charge describe the
+				// same customer.
 				'name'  => ApiHelpers::sanitize_pagbank_name( $customer_name ),
-				'email' => $email,
+				'email' => ApiHelpers::sanitize_pagbank_email( $email ),
 				'phone' => $phone,
 			),
 			'billingAddress' => array(

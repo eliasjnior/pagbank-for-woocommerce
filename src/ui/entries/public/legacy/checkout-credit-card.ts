@@ -180,6 +180,10 @@ const sanitizePagBankName = (name: string): string =>
 		.replace(/\s+/g, " ")
 		.trim();
 
+// Mirror of ApiHelpers::sanitize_pagbank_email (PHP). PagBank rejects e-mails
+// with capital letters on some parameters.
+const sanitizePagBankEmail = (email: string): string => email.trim().toLowerCase();
+
 const authenticate3DS = async (
 	gateway: GatewayConfig,
 	params: ThreeDSAuthParams,
@@ -207,7 +211,7 @@ const authenticate3DS = async (
 			data: {
 				customer: {
 					name: params.customer.name || sanitizedCardHolder,
-					email: params.customer.email,
+					email: sanitizePagBankEmail(params.customer.email),
 					phones: params.customer.phones,
 				},
 				paymentMethod: {

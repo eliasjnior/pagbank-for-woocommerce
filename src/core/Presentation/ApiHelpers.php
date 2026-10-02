@@ -205,7 +205,7 @@ class ApiHelpers {
 
 		return array(
 			'name'   => self::sanitize_pagbank_name( $name ),
-			'email'  => $order->get_billing_email(),
+			'email'  => self::sanitize_pagbank_email( $order->get_billing_email() ),
 			'tax_id' => self::get_order_tax_id_api_data( $order ),
 		);
 	}
@@ -265,6 +265,17 @@ class ApiHelpers {
 		$cleaned = is_string( $cleaned ) ? preg_replace( '/\s+/', ' ', $cleaned ) : $name;
 
 		return trim( is_string( $cleaned ) ? $cleaned : $name );
+	}
+
+	/**
+	 * Normalize an e-mail address for the PagBank API.
+	 *
+	 * The boleto `holder.email` rejects the whole order with 40002 on any
+	 * capital letter, while `customer.email` accepts the same address. Only
+	 * the payload is normalized; the stored order e-mail keeps its casing.
+	 */
+	public static function sanitize_pagbank_email( string $email ): string {
+		return strtolower( trim( $email ) );
 	}
 
 	/**
@@ -625,7 +636,7 @@ class ApiHelpers {
 							'holder'            => array(
 								'name'    => self::sanitize_pagbank_name( $order->get_formatted_billing_full_name() ),
 								'tax_id'  => self::get_order_tax_id_api_data( $order ),
-								'email'   => $order->get_billing_email(),
+								'email'   => self::sanitize_pagbank_email( $order->get_billing_email() ),
 								'address' => self::get_order_billing_address_api_data( $order ),
 							),
 						),

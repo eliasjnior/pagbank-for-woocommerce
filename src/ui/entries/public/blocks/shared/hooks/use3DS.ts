@@ -7,6 +7,7 @@
 import apiFetch from "@wordpress/api-fetch";
 import { useCallback, useRef, useState } from "react";
 import type { CardPaymentMethodSettings, CardType } from "../types";
+import { sanitizePagBankEmail } from "../utils";
 
 export type ThreeDSStatus =
 	| "AUTH_FLOW_COMPLETED"
@@ -134,7 +135,7 @@ export const use3DS = ({ settings, cardType }: Use3DSOptions): Use3DSReturn => {
 					data: {
 						customer: {
 							name: params.customer.name,
-							email: params.customer.email,
+							email: sanitizePagBankEmail(params.customer.email),
 							phones: params.customer.phones || [],
 						},
 						paymentMethod: {
