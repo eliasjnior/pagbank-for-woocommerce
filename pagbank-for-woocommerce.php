@@ -10,7 +10,7 @@
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
  * WC requires at least: 9.9
- * WC tested up to: 11.0
+ * WC tested up to: 11.1
  * Text Domain: pagbank-for-woocommerce
  * Domain Path: /languages
  *
