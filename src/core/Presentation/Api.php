@@ -745,11 +745,7 @@ class Api {
 			$safe_log = false !== Helpers::get_constant_value( 'PAGBANK_SAFE_REQUEST_LOG' );
 
 			if ( $safe_log && isset( $headers['Authorization'] ) ) {
-				$headers['Authorization'] = preg_replace(
-					'/^(Bearer|Pub)\s+.+$/i',
-					'$1 *****',
-					$headers['Authorization']
-				);
+				$headers['Authorization'] = $this->mask_authorization_header( (string) $headers['Authorization'] );
 			}
 
 			$context['headers'] = $headers;
@@ -760,6 +756,26 @@ class Api {
 			$log_id,
 			$context
 		);
+	}
+
+	/**
+	 * Mask an Authorization header value for logging.
+	 *
+	 * Most endpoints send the bare connect token, so anchoring on a
+	 * `Bearer`/`Pub` prefix left the credential in cleartext in the logs.
+	 *
+	 * @param string $value The raw header value.
+	 */
+	private function mask_authorization_header( string $value ): string {
+		if ( '' === trim( $value ) ) {
+			return $value;
+		}
+
+		if ( preg_match( '/^(Bearer|Pub)\s+/i', $value, $matches ) ) {
+			return $matches[1] . ' *****';
+		}
+
+		return '*****';
 	}
 
 	/**

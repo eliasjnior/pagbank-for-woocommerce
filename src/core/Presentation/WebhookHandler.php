@@ -347,7 +347,9 @@ class WebhookHandler {
 				$environment = 'production';
 			}
 
-			$api    = new Api( $environment );
+			// Same source as this handler's own entries, so a failed verification
+			// shows the HTTP status and body next to it.
+			$api    = new Api( $environment, 'pagbank_webhook' );
 			$charge = $api->get_charge( $charge_id );
 
 			if ( is_wp_error( $charge ) ) {
