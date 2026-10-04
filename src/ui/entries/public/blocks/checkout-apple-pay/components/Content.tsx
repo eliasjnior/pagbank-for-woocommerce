@@ -11,6 +11,7 @@ import type {
 } from "@woocommerce/types";
 import { decodeEntities } from "@wordpress/html-entities";
 import { useEffect, useRef, useState } from "react";
+import { createSubmissionId, SUBMISSION_ID_FIELD } from "@/shared/submission-id";
 import { settings } from "../settings";
 
 interface ContentProps {
@@ -173,6 +174,7 @@ export const Content = ({
 							type: emitResponse.responseTypes.SUCCESS,
 							meta: {
 								paymentMethodData: {
+									[SUBMISSION_ID_FIELD]: createSubmissionId(),
 									"pagbank_apple_pay-token": token,
 								},
 							},

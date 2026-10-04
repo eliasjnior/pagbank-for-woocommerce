@@ -10,6 +10,7 @@ import type {
 	EventRegistrationProps,
 } from "@woocommerce/types";
 import { useEffect, useRef } from "react";
+import { createSubmissionId, SUBMISSION_ID_FIELD } from "@/shared/submission-id";
 import { useInstallments } from "../hooks/useInstallments";
 import { settings } from "../settings";
 import { InstallmentsSelect } from "./InstallmentsSelect";
@@ -48,6 +49,7 @@ export const SavedTokenContent = ({
 				type: emitResponse.responseTypes.SUCCESS,
 				meta: {
 					paymentMethodData: {
+						[SUBMISSION_ID_FIELD]: createSubmissionId(),
 						"wc-pagbank_credit_card-payment-token": token,
 						"pagbank_credit_card-installments": installmentsRef.current,
 					},
