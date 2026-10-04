@@ -996,7 +996,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 					$token = WC_Payment_Tokens::get( $payment_token );
 
 					if ( $token === null ) {
-						wc_add_notice( __( 'O token de pagamento é inválido.', 'pagbank-for-woocommerce' ), 'error' );
+						Helpers::add_payment_error_notice( __( 'O token de pagamento é inválido.', 'pagbank-for-woocommerce' ) );
 
 						return array(
 							'result'  => 'failure',
@@ -1011,7 +1011,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				$charge_fees = $this->api->charge_fees( $amount_in_cents, $this->maximum_installments, $this->maximum_installments_interest_free, $card_bin );
 
 				if ( is_wp_error( $charge_fees ) ) {
-					wc_add_notice( __( 'Erro ao obter o plano de parcelamento.', 'pagbank-for-woocommerce' ), 'error' );
+					Helpers::add_payment_error_notice( __( 'Erro ao obter o plano de parcelamento.', 'pagbank-for-woocommerce' ) );
 
 					return array(
 						'result'  => 'failure',
@@ -1031,7 +1031,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				}
 
 				if ( $matched_plan === null ) {
-					wc_add_notice( __( 'O plano de parcelamento não foi encontrado.', 'pagbank-for-woocommerce' ), 'error' );
+					Helpers::add_payment_error_notice( __( 'O plano de parcelamento não foi encontrado.', 'pagbank-for-woocommerce' ) );
 
 					return array(
 						'result'  => 'failure',
@@ -1070,10 +1070,10 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				$threeds_id
 			);
 
-			$response = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id() ) );
+			$response = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id(), ApiHelpers::get_request_submission_id() ) );
 
 			if ( is_wp_error( $response ) ) {
-				wc_add_notice( __( 'Houve um erro durante o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ), 'error' );
+				Helpers::add_payment_error_notice( __( 'Houve um erro durante o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ) );
 
 				return array(
 					'result'  => 'failure',
@@ -1092,7 +1092,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				);
 
 				if ( is_wp_error( $refund_response ) ) {
-					wc_add_notice( __( 'Houve um erro durante o reembolso da cobrança inicial. Contate o administrador.', 'pagbank-for-woocommerce' ), 'error' );
+					Helpers::add_payment_error_notice( __( 'Houve um erro durante o reembolso da cobrança inicial. Contate o administrador.', 'pagbank-for-woocommerce' ) );
 
 					return array(
 						'result'  => 'failure',
@@ -1104,14 +1104,14 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 			if ( $charge['status'] === 'IN_ANALYSIS' ) {
 				$order->update_status( 'on-hold', __( 'O PagBank está analisando a transação.', 'pagbank-for-woocommerce' ) );
 			} elseif ( $charge['status'] === 'DECLINED' ) {
-				wc_add_notice( __( 'O pagamento foi recusado.', 'pagbank-for-woocommerce' ), 'error' );
+				Helpers::add_payment_error_notice( __( 'O pagamento foi recusado.', 'pagbank-for-woocommerce' ) );
 
 				return array(
 					'result'  => 'failure',
 					'message' => __( 'O pagamento foi recusado.', 'pagbank-for-woocommerce' ),
 				);
 			} elseif ( $charge['status'] !== 'PAID' ) {
-				wc_add_notice( __( 'Houve um erro no pagamento. Por favor, entre em contato com o suporte.', 'pagbank-for-woocommerce' ), 'error' );
+				Helpers::add_payment_error_notice( __( 'Houve um erro no pagamento. Por favor, entre em contato com o suporte.', 'pagbank-for-woocommerce' ) );
 
 				return array(
 					'result'  => 'failure',
@@ -1158,7 +1158,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				'redirect' => $this->get_return_url( $order ),
 			);
 		} catch ( Exception $e ) {
-			wc_add_notice( $e->getMessage(), 'error' );
+			Helpers::add_payment_error_notice( $e->getMessage() );
 
 			return array(
 				'result'  => 'failure',
@@ -1386,7 +1386,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				$amount
 			);
 
-			$response = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $renewal_order->get_id() ) );
+			$response = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $renewal_order->get_id(), null ) );
 
 			if ( is_wp_error( $response ) ) {
 				throw new Exception( 'Houve um erro no pagamento da renovação.' );
@@ -1397,11 +1397,9 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 			if ( $charge['status'] === 'IN_ANALYSIS' ) {
 				$renewal_order->update_status( 'on-hold', __( 'O PagBank está analisando a transação.', 'pagbank-for-woocommerce' ) );
 			} elseif ( $charge['status'] === 'DECLINED' ) {
-				wc_add_notice( __( 'O pagamento foi recusado.', 'pagbank-for-woocommerce' ), 'error' );
-				return;
+				throw new Exception( __( 'O pagamento foi recusado.', 'pagbank-for-woocommerce' ) );
 			} elseif ( $charge['status'] !== 'PAID' ) {
-				wc_add_notice( __( 'Houve um erro no pagamento. Por favor, entre em contato com o suporte.', 'pagbank-for-woocommerce' ), 'error' );
-				return;
+				throw new Exception( __( 'Houve um erro no pagamento. Por favor, entre em contato com o suporte.', 'pagbank-for-woocommerce' ) );
 			}
 
 			$this->save_order_meta_data( $renewal_order, $response, $data, null );
@@ -1410,6 +1408,15 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 
 			WC_Subscriptions_Manager::process_subscription_payments_on_order( $renewal_order );
 		} catch ( Exception $ex ) {
+			// Renewals run on cron, where there is no session to carry a notice.
+			$renewal_order->add_order_note(
+				sprintf(
+					/* translators: %s: error message. */
+					__( 'Falha na renovação via PagBank: %s', 'pagbank-for-woocommerce' ),
+					$ex->getMessage()
+				)
+			);
+
 			WC_Subscriptions_Manager::process_subscription_payment_failure_on_order( $renewal_order );
 		}
 	}

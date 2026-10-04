@@ -16,6 +16,7 @@ use PagBank_WooCommerce\Gateways\Traits\ReactSettingsTrait;
 use PagBank_WooCommerce\Presentation\Api;
 use PagBank_WooCommerce\Presentation\ApiHelpers;
 use PagBank_WooCommerce\Presentation\Connect;
+use PagBank_WooCommerce\Presentation\Helpers;
 use PagBank_WooCommerce\Presentation\WebhookHandler;
 use WC_Order;
 use WC_Payment_Gateway;
@@ -174,12 +175,12 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 			$order                 = wc_get_order( $order_id );
 			$expiration_in_minutes = $this->get_option( 'expiration_minutes' );
 			$data                  = ApiHelpers::get_pix_payment_api_data( $this, $order, $expiration_in_minutes );
-			$response              = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id() ) );
+			$response              = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id(), ApiHelpers::get_request_submission_id() ) );
 
 			$api_error = __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' );
 
 			if ( is_wp_error( $response ) ) {
-				wc_add_notice( $api_error, 'error' );
+				Helpers::add_payment_error_notice( $api_error );
 
 				return array(
 					'result'  => 'failure',
@@ -230,7 +231,7 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 				'redirect' => $this->get_return_url( $order ),
 			);
 		} catch ( Exception $e ) {
-			wc_add_notice( $e->getMessage(), 'error' );
+			Helpers::add_payment_error_notice( $e->getMessage() );
 
 			return array(
 				'result'  => 'failure',

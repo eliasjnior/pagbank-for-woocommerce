@@ -166,10 +166,10 @@ class GooglePayPaymentGateway extends WC_Payment_Gateway {
 			}
 
 			$data     = ApiHelpers::get_google_pay_payment_api_data( $this, $order, $google_pay_token );
-			$response = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id() ) );
+			$response = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id(), ApiHelpers::get_request_submission_id() ) );
 
 			if ( is_wp_error( $response ) ) {
-				wc_add_notice( __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ), 'error' );
+				Helpers::add_payment_error_notice( __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ) );
 
 				return array(
 					'result'  => 'failure',
@@ -200,7 +200,7 @@ class GooglePayPaymentGateway extends WC_Payment_Gateway {
 				'redirect' => $this->get_return_url( $order ),
 			);
 		} catch ( Exception $e ) {
-			wc_add_notice( $e->getMessage(), 'error' );
+			Helpers::add_payment_error_notice( $e->getMessage() );
 
 			return array(
 				'result'  => 'failure',
