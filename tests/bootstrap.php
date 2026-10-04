@@ -104,6 +104,33 @@ if ( ! function_exists( 'plugin_basename' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wc_add_notice' ) ) {
+	function wc_add_notice( $message, $notice_type = 'success', $data = array() ) {
+		$GLOBALS['pagbank_test_notices'][] = array(
+			'message' => $message,
+			'type'    => $notice_type,
+		);
+	}
+}
+
+if ( ! class_exists( 'PagBank_Test_WooCommerce' ) ) {
+	/**
+	 * Stand-in for the WooCommerce instance returned by WC().
+	 */
+	class PagBank_Test_WooCommerce {
+
+		public function is_store_api_request() {
+			return ! empty( $GLOBALS['pagbank_test_is_store_api_request'] );
+		}
+	}
+}
+
+if ( ! function_exists( 'WC' ) ) {
+	function WC() {
+		return new PagBank_Test_WooCommerce();
+	}
+}
+
 if ( ! defined( 'PAGBANK_WOOCOMMERCE_FILE_PATH' ) ) {
 	define( 'PAGBANK_WOOCOMMERCE_FILE_PATH', dirname( __DIR__ ) . '/pagbank-for-woocommerce.php' );
 }

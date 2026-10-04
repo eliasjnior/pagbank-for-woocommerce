@@ -400,4 +400,23 @@ class Helpers {
 			'error_message' => $error_message,
 		);
 	}
+
+	/**
+	 * Queue a payment error notice for the legacy checkout.
+	 *
+	 * The Store API renders the `message` returned by `process_payment()` and
+	 * never flushes the notice queue when a gateway fails with one, so a notice
+	 * added here survives in the session and `CartController::validate_cart_items()`
+	 * turns it into a 409 cart error on the customer's next place-order request,
+	 * blocking every retry before any gateway runs.
+	 *
+	 * @param string $message Customer-facing error message.
+	 */
+	public static function add_payment_error_notice( string $message ): void {
+		if ( WC()->is_store_api_request() ) {
+			return;
+		}
+
+		wc_add_notice( $message, 'error' );
+	}
 }

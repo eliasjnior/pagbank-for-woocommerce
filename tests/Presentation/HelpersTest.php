@@ -137,4 +137,37 @@ class HelpersTest extends TestCase {
 			'bad area code' => array( '(00) 99999-9999', false ),
 		);
 	}
+
+	/**
+	 * The legacy checkout renders the notice queue, so the message must be there.
+	 */
+	public function test_add_payment_error_notice_queues_on_the_legacy_checkout(): void {
+		$GLOBALS['pagbank_test_notices']              = array();
+		$GLOBALS['pagbank_test_is_store_api_request'] = false;
+
+		Helpers::add_payment_error_notice( 'Pagamento recusado.' );
+
+		$this->assertSame(
+			array(
+				array(
+					'message' => 'Pagamento recusado.',
+					'type'    => 'error',
+				),
+			),
+			$GLOBALS['pagbank_test_notices']
+		);
+	}
+
+	/**
+	 * A notice queued during a Store API request is never flushed, and the next
+	 * place-order request turns it into a 409 cart error that blocks the retry.
+	 */
+	public function test_add_payment_error_notice_queues_nothing_on_the_store_api(): void {
+		$GLOBALS['pagbank_test_notices']              = array();
+		$GLOBALS['pagbank_test_is_store_api_request'] = true;
+
+		Helpers::add_payment_error_notice( 'Pagamento recusado.' );
+
+		$this->assertSame( array(), $GLOBALS['pagbank_test_notices'] );
+	}
 }
