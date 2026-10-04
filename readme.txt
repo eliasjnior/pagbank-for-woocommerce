@@ -291,10 +291,11 @@ Caso o lojista não possua o identificador da conta preenchido, os produtos cada
 * Adicionado análise de risco (antifraude) nos pagamentos com Pix, mantendo o pedido aguardando confirmação enquanto a análise ocorre.
 * Adicionado filtro `pagbank_payment_instructions_email_ids`, que permite a outros plugins exibir as instruções de Pix e boleto em seus próprios e-mails.
 * Melhorado a robustez da página de confirmação do pedido diante de mudanças internas do WooCommerce.
-* Corrigido erro fatal no envio de e-mails do WooCommerce.
+* Corrigido diversos problemas no checkout, nos pagamentos e nas renovações de assinatura.
+* Corrigido problemas no envio dos e-mails do pedido.
+* Corrigido exposição do token de acesso nos logs de depuração.
+* Corrigido a tela de configuração dos métodos de pagamento.
 * Corrigido compatibilidade com a Calculadora de Frete e Campos Checkout para o Brasil.
-* Corrigido formato do celular salvo.
-* Corrigido boleto recusado quando o e-mail do cliente possui letras maiúsculas.
 * Corrigido layout.
 * Corrigido versão mínima do WooCommerce declarada pelo plugin.
 * Atualizado a compatibilidade declarada para WordPress 7.1 e WooCommerce 11.0.
