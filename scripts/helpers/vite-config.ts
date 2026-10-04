@@ -49,6 +49,7 @@ export const entries: Record<string, string> = {
 	"public/order-received/payment-instructions":
 		"src/ui/entries/public/order-received/payment-instructions/index.tsx",
 	"public/legacy/checkout-credit-card": "src/ui/entries/public/legacy/checkout-credit-card.ts",
+	"public/legacy/checkout-submission": "src/ui/entries/public/legacy/checkout-submission.ts",
 	"public/legacy/checkout-fields": "src/ui/entries/public/legacy/checkout-fields.ts",
 	"public/blocks/checkout-fields": "src/ui/entries/public/blocks/checkout-fields.ts",
 	"public/blocks/checkout-boleto": "src/ui/entries/public/blocks/checkout-boleto/index.tsx",

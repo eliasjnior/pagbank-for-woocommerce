@@ -60,7 +60,35 @@ class PaymentGateways {
 	public function __construct() {
 		add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateways' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_checkout_submission_script' ) );
 		add_filter( 'woocommerce_rest_prepare_payment_gateway', array( $this, 'add_icon_to_rest_response' ), 10, 2 );
+	}
+
+	/**
+	 * Enqueue the classic checkout submission identifier script.
+	 *
+	 * Enqueued for every gateway rather than per payment method: the field has
+	 * to be in the form before the customer picks one, and the Blocks checkout
+	 * carries the identifier through `paymentMethodData` instead.
+	 */
+	public function enqueue_checkout_submission_script(): void {
+		if ( ! function_exists( 'is_checkout' ) || ! ( is_checkout() || is_checkout_pay_page() ) ) {
+			return;
+		}
+
+		$asset_path = plugin_dir_path( PAGBANK_WOOCOMMERCE_FILE_PATH ) . 'dist/public/legacy/checkout-submission.js';
+
+		if ( ! file_exists( $asset_path ) ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'pagbank-checkout-submission',
+			plugins_url( 'dist/public/legacy/checkout-submission.js', PAGBANK_WOOCOMMERCE_FILE_PATH ),
+			array( 'jquery' ),
+			PAGBANK_WOOCOMMERCE_VERSION,
+			true
+		);
 	}
 
 	/**
