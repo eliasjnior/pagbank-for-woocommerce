@@ -101,11 +101,17 @@ export const GatewaySettingsApp = ({ gatewayId }: GatewaySettingsAppProps) => {
 	// Reset form only on initial data load
 	useEffect(() => {
 		if (data?.settings && !isInitialized) {
-			reset(data.settings);
-			setCleanValues(data.settings);
+			// Seed the form with the parsed values, not the raw ones: the schema's
+			// `.catch()` fallbacks rewrite whatever the REST API flattened to "",
+			// and an unparsed baseline would never match the submitted payload.
+			const parsed = schema.safeParse(data.settings);
+			const initialValues = (parsed.success ? parsed.data : data.settings) as GatewaySettings;
+
+			reset(initialValues);
+			setCleanValues(initialValues);
 			setIsInitialized(true);
 		}
-	}, [data?.settings, reset, isInitialized]);
+	}, [data?.settings, reset, isInitialized, schema]);
 
 	// Disable WooCommerce's native form change detection
 	useWooCommerceFormDisable(isDirty);
@@ -134,7 +140,9 @@ export const GatewaySettingsApp = ({ gatewayId }: GatewaySettingsAppProps) => {
 				fieldDefaults: data.fieldDefaults,
 			});
 
-			// Update clean values to match saved data (resets isDirty)
+			// `formData` is the resolver's output, so it can differ from the raw field
+			// values; reset alongside the baseline or the form stays dirty after saving.
+			reset(formData);
 			setCleanValues(formData);
 		},
 		(errors) => {
