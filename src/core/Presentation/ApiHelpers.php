@@ -211,29 +211,57 @@ class ApiHelpers {
 	}
 
 	/**
+	 * POST field carrying the per-submission identifier.
+	 *
+	 * The Blocks checkout sends it through `paymentMethodData`, which
+	 * WooCommerce copies into `$_POST` before calling `process_payment()`
+	 * (see `StoreApi\Legacy::process_legacy_payment`), so both checkouts
+	 * read it from the same place.
+	 */
+	public const SUBMISSION_ID_FIELD = 'pagbank_submission_id';
+
+	/**
+	 * Read the submission identifier sent by the checkout, if any.
+	 *
+	 * Absent on flows with no browser submit (subscription renewals,
+	 * admin-created orders), where the owning order ID already scopes the
+	 * idempotency key.
+	 */
+	public static function get_request_submission_id(): ?string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only; the checkout verifies its own nonce.
+		if ( ! isset( $_POST[ self::SUBMISSION_ID_FIELD ] ) ) {
+			return null;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only; the checkout verifies its own nonce.
+		$submission_id = wc_clean( wp_unslash( $_POST[ self::SUBMISSION_ID_FIELD ] ) );
+
+		return is_string( $submission_id ) && '' !== $submission_id ? $submission_id : null;
+	}
+
+	/**
 	 * Compute an idempotency key for a create-order request.
 	 *
-	 * Scoped to a single WC order and a single 3DS authentication: two
-	 * parallel processings of the same order (e.g. a network glitch causing
-	 * a double-submit) collide and PagBank dedupes them, but a legitimate
-	 * retry — which produces a new WC order, or at least a fresh 3DS ID —
-	 * gets a new key and is accepted.
+	 * Keyed on the submission identifier the checkout generates per attempt, so
+	 * resending one attempt dedupes while a deliberate retry is accepted. The
+	 * order ID cannot do this: a declined payment keeps the same WC order, so
+	 * retries reused the key while the body shifted underneath them (fresh
+	 * encrypted blob, new Pix expiration, different `store` flag) and PagBank
+	 * answered IDEMPOTENCY_CONFLICT.
 	 *
-	 * Previously the key was a hash of cart shape (email + tax_id + amount
-	 * + type + items) so two distinct WC orders for the same cart shared a
-	 * key, and PagBank rejected the second attempt with
-	 * IDEMPOTENCY_CONFLICT whenever the request body shifted (different
-	 * 3DS ID, different shipping locality, new encrypted blob, etc).
+	 * Without an identifier the payload itself stands in, which keeps retries
+	 * working when the checkout script is stale. Deterministic payloads (a
+	 * renewal charging a stored card) still hash the same, so a re-run cron
+	 * cannot charge twice.
 	 *
-	 * The card encrypted blob is still intentionally excluded because
-	 * RSA-OAEP produces a different ciphertext on every call.
-	 *
-	 * @param array    $data     The create-order payload.
-	 * @param int|null $order_id Owning WC order ID.
+	 * @param array       $data          The create-order payload.
+	 * @param int|null    $order_id      Owning WC order ID.
+	 * @param string|null $submission_id Per-submission identifier from the checkout.
 	 */
-	public static function get_create_order_idempotency_key( array $data, ?int $order_id = null ): string {
+	public static function get_create_order_idempotency_key( array $data, ?int $order_id = null, ?string $submission_id = null ): string {
 		$parts = array(
 			(string) ( $order_id ?? '' ),
+			(string) ( $submission_id ?? '' ),
 			$data['customer']['email'] ?? '',
 			$data['customer']['tax_id']['value'] ?? '',
 			(string) ( $data['charges'][0]['amount']['value'] ?? '' ),
@@ -241,6 +269,10 @@ class ApiHelpers {
 			$data['charges'][0]['payment_method']['authentication_method']['id'] ?? '',
 			(string) wp_json_encode( $data['items'] ?? array() ),
 		);
+
+		if ( null === $submission_id ) {
+			$parts[] = (string) wp_json_encode( $data );
+		}
 
 		return md5( implode( '|', $parts ) );
 	}

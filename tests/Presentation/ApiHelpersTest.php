@@ -153,6 +153,99 @@ class ApiHelpersTest extends TestCase {
 	}
 
 	/**
+	 * The submission identifier is what separates resending one attempt from
+	 * retrying: the same identifier must collapse to the same key.
+	 */
+	public function test_get_create_order_idempotency_key_is_stable_for_same_submission(): void {
+		$data = $this->sample_order_payload();
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' )
+		);
+	}
+
+	/**
+	 * A retry on the same order carries a new submission identifier, so the key
+	 * must change even though order, customer, amount and items are identical.
+	 */
+	public function test_get_create_order_idempotency_key_changes_with_submission(): void {
+		$data = $this->sample_order_payload();
+
+		$this->assertNotSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-b' )
+		);
+	}
+
+	/**
+	 * Without a submission identifier the key stays scoped to the order, which
+	 * is what renewals and admin-created orders rely on.
+	 */
+	public function test_get_create_order_idempotency_key_falls_back_to_order_scope(): void {
+		$data = $this->sample_order_payload();
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, null )
+		);
+
+		$this->assertNotSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 76 )
+		);
+	}
+
+	/**
+	 * With no submission identifier (stale checkout script), a retry still has
+	 * to get a new key: the payload stands in for the missing discriminator.
+	 */
+	public function test_get_create_order_idempotency_key_uses_payload_without_submission(): void {
+		$data           = $this->sample_order_payload();
+		$data['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-one' );
+
+		$retry = $data;
+		$retry['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-two' );
+
+		$this->assertNotSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $retry, 75 )
+		);
+	}
+
+	/**
+	 * A deterministic payload with no submission identifier — a renewal
+	 * charging a stored card — must stay deduped so a re-run cron cannot
+	 * charge twice.
+	 */
+	public function test_get_create_order_idempotency_key_dedupes_deterministic_payload(): void {
+		$data = $this->sample_order_payload();
+		$data['charges'][0]['payment_method']['card'] = array( 'id' => 'CARD_ABC' );
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 )
+		);
+	}
+
+	/**
+	 * A submission identifier takes precedence: the same attempt dedupes even
+	 * though the encrypted blob differs on every encrypt() call.
+	 */
+	public function test_get_create_order_idempotency_key_ignores_payload_with_submission(): void {
+		$data           = $this->sample_order_payload();
+		$data['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-one' );
+
+		$same_attempt = $data;
+		$same_attempt['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-two' );
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' ),
+			ApiHelpers::get_create_order_idempotency_key( $same_attempt, 75, 'submission-a' )
+		);
+	}
+
+	/**
 	 * Same charge + same amount = same refund key.
 	 */
 	public function test_get_refund_idempotency_key_is_stable(): void {
