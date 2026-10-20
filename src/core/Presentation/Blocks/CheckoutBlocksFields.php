@@ -17,6 +17,7 @@ use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields as WooCheckoutF
 use Automattic\WooCommerce\Blocks\Package;
 use PagBank_WooCommerce\Presentation\Helpers;
 use PagBank_WooCommerce\Presentation\LegacyCheckoutFields;
+use WC_Customer;
 use WC_Order;
 use WP_Error;
 
@@ -26,9 +27,42 @@ use WP_Error;
 class CheckoutBlocksFields {
 
 	/**
+	 * Every additional checkout field this plugin may register.
+	 */
+	public const FIELD_IDS = array(
+		'pagbank/persontype',
+		'pagbank/cpf',
+		'pagbank/cnpj',
+		'pagbank/company',
+		'pagbank/address-number',
+		'pagbank/neighborhood',
+		'pagbank/cellphone',
+	);
+
+	/**
+	 * Interop meta suffix of each field. The company has none: it maps to the
+	 * core company address field.
+	 */
+	private const LEGACY_META_SUFFIXES = array(
+		'pagbank/persontype'     => 'persontype',
+		'pagbank/cpf'            => 'cpf',
+		'pagbank/cnpj'           => 'cnpj',
+		'pagbank/address-number' => 'number',
+		'pagbank/neighborhood'   => 'neighborhood',
+		'pagbank/cellphone'      => 'cellphone',
+	);
+
+	/**
 	 * Instance.
 	 */
 	private static ?CheckoutBlocksFields $instance = null;
+
+	/**
+	 * Fields deregistered from the My Account address pages in this request.
+	 *
+	 * @var string[]
+	 */
+	private array $account_field_ids = array();
 
 	/**
 	 * Constructor.
@@ -41,6 +75,14 @@ class CheckoutBlocksFields {
 		add_action( 'wp', array( $this, 'maybe_set_default_persontype' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'woocommerce_set_additional_field_value', array( $this, 'save_field_to_legacy_meta' ), 10, 4 );
+		add_action( 'wp', array( $this, 'maybe_deregister_on_my_account' ) );
+		add_filter( 'woocommerce_my_account_edit_address_field_value', array( $this, 'fill_edit_address_value' ), 10, 2 );
+		// Priority 20: after WooCommerce saved the customer and its own additional fields.
+		add_action( 'woocommerce_customer_save_address', array( $this, 'mirror_account_address_to_fields' ), 20, 4 );
+
+		foreach ( array_keys( self::LEGACY_META_SUFFIXES ) as $field_id ) {
+			add_filter( 'woocommerce_get_default_value_for_' . $field_id, array( $this, 'default_from_legacy_meta' ), 10, 3 );
+		}
 	}
 
 	/**
@@ -502,8 +544,9 @@ class CheckoutBlocksFields {
 	/**
 	 * Save field values to legacy meta keys for compatibility with existing code.
 	 *
-	 * This method maps the new checkout block fields to legacy meta keys used by
-	 * the classic checkout and other parts of the plugin.
+	 * This method maps the new checkout block fields to the interop meta keys
+	 * used by the classic checkout, the My Account address form and other
+	 * parts of the plugin.
 	 *
 	 * @param string $key       Field key.
 	 * @param mixed  $value     Field value.
@@ -511,52 +554,256 @@ class CheckoutBlocksFields {
 	 * @param object $wc_object WooCommerce object (WC_Order or WC_Customer).
 	 */
 	public function save_field_to_legacy_meta( string $key, $value, string $group, object $wc_object ): void {
-		if ( ! ( $wc_object instanceof WC_Order ) ) {
+		$is_order = $wc_object instanceof WC_Order;
+
+		if ( ! $is_order && ! ( $wc_object instanceof WC_Customer ) ) {
 			return;
 		}
 
-		$prefix = 'billing' === $group ? '_billing_' : '_shipping_';
+		if ( 'pagbank/company' === $key ) {
+			// Razão Social maps to the core company address field.
+			if ( 'billing' === $group ) {
+				$wc_object->set_billing_company( (string) $value );
+			} elseif ( 'shipping' === $group ) {
+				$wc_object->set_shipping_company( (string) $value );
+			}
 
-		switch ( $key ) {
-			case 'pagbank/persontype':
-				if ( in_array( (string) $value, array( '1', '2' ), true ) ) {
-					$wc_object->update_meta_data( $prefix . 'persontype', (string) $value );
-				}
-				break;
-
-			case 'pagbank/cpf':
-				$wc_object->update_meta_data( $prefix . 'cpf', (string) $value );
-				break;
-
-			case 'pagbank/cnpj':
-				$wc_object->update_meta_data( $prefix . 'cnpj', (string) $value );
-				break;
-
-			case 'pagbank/company':
-				// Razão Social maps to the core company address field.
-				if ( 'billing' === $group ) {
-					$wc_object->set_billing_company( (string) $value );
-				} else {
-					$wc_object->set_shipping_company( (string) $value );
-				}
-				break;
-
-			case 'pagbank/address-number':
-				$wc_object->update_meta_data( $prefix . 'number', $value );
-				break;
-
-			case 'pagbank/neighborhood':
-				$wc_object->update_meta_data( $prefix . 'neighborhood', $value );
-				break;
-
-			case 'pagbank/cellphone':
-				$wc_object->update_meta_data( $prefix . 'cellphone', $value );
-				break;
-
-			default:
-				return;
+			return;
 		}
 
-		$wc_object->save_meta_data();
+		if ( 'pagbank/persontype' === $key && ! in_array( (string) $value, array( '1', '2' ), true ) ) {
+			return;
+		}
+
+		$meta_key = self::legacy_meta_key( $key, $group, $is_order );
+
+		if ( '' === $meta_key ) {
+			return;
+		}
+
+		$wc_object->update_meta_data( $meta_key, (string) $value );
+
+		// Whoever persists a customer field saves the customer afterwards; saving
+		// here would write a half-updated session customer.
+		if ( $is_order ) {
+			$wc_object->save_meta_data();
+		}
+	}
+
+	/**
+	 * Remove the fields from the My Account address pages.
+	 *
+	 * WooCommerce adds every address-location additional field to the edit
+	 * address form, where the classic fields (ours or a third-party plugin's)
+	 * already collect the same data. Deregistering, rather than filtering the
+	 * form, also keeps WooCommerce from saving the missing fields as empty.
+	 */
+	public function maybe_deregister_on_my_account(): void {
+		if ( ! function_exists( 'is_account_page' ) || ! is_account_page() || ! is_wc_endpoint_url( 'edit-address' ) ) {
+			return;
+		}
+
+		$this->account_field_ids = self::deregister_fields( self::FIELD_IDS );
+	}
+
+	/**
+	 * Deregister additional checkout fields for the current request.
+	 *
+	 * @param string[] $field_ids Field IDs.
+	 *
+	 * @return string[] The IDs that were registered and are now removed.
+	 */
+	public static function deregister_fields( array $field_ids ): array {
+		if ( ! class_exists( Package::class ) ) {
+			return array();
+		}
+
+		try {
+			$checkout_fields = Package::container()->get( WooCheckoutFields::class );
+		} catch ( \Throwable $e ) {
+			return array();
+		}
+
+		// `deregister_checkout_field()` is marked @internal in WooCommerce and has
+		// no public equivalent; degrade to keeping the fields if it ever goes away.
+		if ( ! ( $checkout_fields instanceof WooCheckoutFields ) || ! method_exists( $checkout_fields, 'deregister_checkout_field' ) ) {
+			return array();
+		}
+
+		$removed = array();
+
+		foreach ( $field_ids as $field_id ) {
+			if ( $checkout_fields->is_field( $field_id ) ) {
+				$checkout_fields->deregister_checkout_field( $field_id );
+				$removed[] = $field_id;
+			}
+		}
+
+		return $removed;
+	}
+
+	/**
+	 * Prefill an empty classic field on the My Account edit address form with
+	 * the value saved by the Blocks checkout.
+	 *
+	 * @param mixed  $value The stored user meta value.
+	 * @param string $key   The address field key.
+	 *
+	 * @return mixed
+	 */
+	public function fill_edit_address_value( $value, string $key ) {
+		if ( ! empty( $value ) ) {
+			return $value;
+		}
+
+		$fallback = self::get_customer_meta( get_current_user_id(), $key );
+
+		return '' === $fallback ? $value : $fallback;
+	}
+
+	/**
+	 * Copy the classic fields saved on the My Account address form to the
+	 * Blocks fields, so the next Blocks checkout prefills the new values.
+	 *
+	 * Core's own callback on this hook defaults `$address` and `$customer`,
+	 * both added in WooCommerce 9.8.
+	 *
+	 * @param mixed $user_id      User ID.
+	 * @param mixed $address_type Address type (billing|shipping).
+	 * @param mixed $address      The address fields of the submitted form.
+	 * @param mixed $customer     The saved customer.
+	 */
+	public function mirror_account_address_to_fields( $user_id = 0, $address_type = '', $address = array(), $customer = null ): void {
+		if ( empty( $this->account_field_ids ) || ! is_array( $address ) ) {
+			return;
+		}
+
+		if ( ! ( $customer instanceof WC_Customer ) ) {
+			if ( (int) $user_id <= 0 ) {
+				return;
+			}
+
+			$customer = new WC_Customer( (int) $user_id );
+		}
+
+		$changed = false;
+
+		foreach ( array_keys( $address ) as $key ) {
+			$field = self::blocks_field_for_legacy_key( (string) $key );
+
+			if ( ! $field || $address_type !== $field['group'] || ! in_array( $field['id'], $this->account_field_ids, true ) ) {
+				continue;
+			}
+
+			$meta_key = self::blocks_meta_key( $field['group'], $field['id'] );
+
+			$customer->update_meta_data( $meta_key, (string) $customer->get_meta( (string) $key ) );
+			$changed = true;
+		}
+
+		if ( $changed ) {
+			$customer->save_meta_data();
+		}
+	}
+
+	/**
+	 * Default an empty field to the interop meta saved by the classic checkout,
+	 * the My Account form or a third-party plugin.
+	 *
+	 * @param mixed $value     The default value (null).
+	 * @param mixed $group     The field group (billing|shipping|other).
+	 * @param mixed $wc_object The object the field is read from.
+	 *
+	 * @return mixed
+	 */
+	public function default_from_legacy_meta( $value = null, $group = '', $wc_object = null ) {
+		if ( null !== $value || ! ( $wc_object instanceof WC_Customer ) ) {
+			return $value;
+		}
+
+		$field_id = substr( current_filter(), strlen( 'woocommerce_get_default_value_for_' ) );
+		$meta_key = self::legacy_meta_key( $field_id, (string) $group, false );
+
+		if ( '' === $meta_key ) {
+			return $value;
+		}
+
+		$legacy = (string) $wc_object->get_meta( $meta_key );
+
+		return '' === $legacy ? $value : $legacy;
+	}
+
+	/**
+	 * Read an interop customer meta, falling back to the Blocks field that
+	 * holds the same data.
+	 *
+	 * @param int    $customer_id Customer ID.
+	 * @param string $legacy_key  Interop meta key, e.g. `billing_cpf`.
+	 */
+	public static function get_customer_meta( int $customer_id, string $legacy_key ): string {
+		$value = (string) get_user_meta( $customer_id, $legacy_key, true );
+
+		if ( '' !== $value ) {
+			return $value;
+		}
+
+		$field = self::blocks_field_for_legacy_key( $legacy_key );
+
+		if ( ! $field ) {
+			return '';
+		}
+
+		return (string) get_user_meta( $customer_id, self::blocks_meta_key( $field['group'], $field['id'] ), true );
+	}
+
+	/**
+	 * Interop meta key of a field: `billing_cpf` on the customer, `_billing_cpf`
+	 * on the order.
+	 *
+	 * @param string $field_id  Field ID.
+	 * @param string $group     Field group (billing|shipping|other).
+	 * @param bool   $for_order Whether the key is for an order.
+	 *
+	 * @return string Empty when the field has no interop meta.
+	 */
+	public static function legacy_meta_key( string $field_id, string $group, bool $for_order ): string {
+		if ( ! isset( self::LEGACY_META_SUFFIXES[ $field_id ] ) || ( 'billing' !== $group && 'shipping' !== $group ) ) {
+			return '';
+		}
+
+		return ( $for_order ? '_' : '' ) . $group . '_' . self::LEGACY_META_SUFFIXES[ $field_id ];
+	}
+
+	/**
+	 * Field behind an interop customer meta key.
+	 *
+	 * @param string $legacy_key Interop meta key, e.g. `billing_cpf`.
+	 *
+	 * @return array{group?:string,id?:string} Empty when no field matches.
+	 */
+	public static function blocks_field_for_legacy_key( string $legacy_key ): array {
+		if ( ! preg_match( '/^(billing|shipping)_(.+)$/', $legacy_key, $matches ) ) {
+			return array();
+		}
+
+		$field_id = array_search( $matches[2], self::LEGACY_META_SUFFIXES, true );
+
+		return false === $field_id ? array() : array(
+			'group' => $matches[1],
+			'id'    => $field_id,
+		);
+	}
+
+	/**
+	 * Meta key WooCommerce stores a field under.
+	 *
+	 * Literal copy of `CheckoutFields::get_group_key()` so the mapping is
+	 * testable without WooCommerce.
+	 *
+	 * @param string $group    Field group (billing|shipping).
+	 * @param string $field_id Field ID.
+	 */
+	public static function blocks_meta_key( string $group, string $field_id ): string {
+		return '_wc_' . $group . '/' . $field_id;
 	}
 }
