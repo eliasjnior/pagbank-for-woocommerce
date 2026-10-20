@@ -8,47 +8,24 @@ x-wordpress-db: &wordpress-db
 
 services:
   wordpress:
-    image: wordpress:php8.3
+    build: docker/wordpress
+    # Rebuilding on every `up` is a cache hit unless docker/wordpress changed.
+    pull_policy: build
     depends_on:
-      - database
-      - mailpit
+      database:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
     volumes:
       - ./wp:/var/www/html
       - ./:/var/www/html/wp-content/plugins/pagbank-for-woocommerce
-      - ./wordpress.ini:/usr/local/etc/php/conf.d/wordpress.ini
+      - ./docker/wordpress/php.ini:/usr/local/etc/php/conf.d/zz-pagbank.ini:ro
+      - ./docker/wordpress/apache.conf:/etc/apache2/sites-enabled/pagbank.conf:ro
+      - ./docker/wordpress/apache-ports.conf:/etc/apache2/ports.conf:ro
       - ./logs:/var/log
       - ./certs:/etc/ssl/custom-certs:ro
-      - ./apache.conf:/etc/apache2/sites-available/pagbank.conf:ro
-      - ./apache-ports.conf:/etc/apache2/ports.conf:ro
-    entrypoint: |
-      bash -c "
-        # Install Xdebug if not present
-        if ! php -m | grep -q xdebug; then
-          echo 'Installing Xdebug...'
-          yes | pecl install xdebug
-          docker-php-ext-enable xdebug
-          echo 'Xdebug installed successfully!'
-        else
-          echo 'Xdebug is already installed.'
-        fi
-
-        # SSL Certificate setup
-        if ls /etc/ssl/custom-certs/*.crt 1>/dev/null 2>&1; then
-          echo 'Using custom SSL certificates from ./certs/'
-          cp /etc/ssl/custom-certs/*.crt /etc/ssl/certs/server.crt
-          cp /etc/ssl/custom-certs/*.key /etc/ssl/private/server.key
-        else
-          echo 'No custom certificates found, generating self-signed certificate...'
-          openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/server.key -out /etc/ssl/certs/server.crt -subj '/CN=localhost/O=PagBank Development/C=BR'
-          echo 'Self-signed certificate generated!'
-        fi
-        chmod 600 /etc/ssl/private/server.key
-
-        a2enmod ssl
-        a2dissite 000-default
-        a2ensite pagbank
-        exec docker-entrypoint.sh apache2-foreground
-      "
+      # Shared by every worktree, so WordPress, WooCommerce and themes download once.
+      - ${HOME}/.wp-cli/cache:/var/www/.wp-cli/cache
     # Resolves the site host to this container, so loopback requests from WordPress and WP-CLI
     # reach Apache instead of the host's loopback.
     networks:
@@ -62,8 +39,10 @@ services:
       <<: *wordpress-db
       WP_HTTP_PORT: ${WP_HTTP_PORT:-80}
       WP_HTTPS_PORT: ${WP_HTTPS_PORT:-443}
-      XDEBUG_MODE: ${XDEBUG_MODE:-debug}
-      XDEBUG_CONFIG: client_port=${XDEBUG_PORT:-9003}
+    healthcheck:
+      test: curl -fso /dev/null "http://127.0.0.1:$${WP_HTTP_PORT}/wp-includes/images/blank.gif"
+      interval: 2s
+      start_period: 60s
 
   database:
     image: mariadb
@@ -74,19 +53,10 @@ services:
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
       MYSQL_PASSWORD: wordpress
-
-  wordpress-cli:
-    image: wordpress:cli
-    depends_on:
-      - wordpress
-    volumes:
-      - wp_data:/var/www/html
-      - ./wp:/var/www/html
-      - ./:/var/www/html/wp-content/plugins/pagbank-for-woocommerce
-    environment:
-      <<: *wordpress-db
-    profiles:
-      - tools
+    healthcheck:
+      test: mariadb-admin ping -h 127.0.0.1 --silent
+      interval: 2s
+      start_period: 30s
 
   phpmyadmin:
     image: phpmyadmin
@@ -134,4 +104,3 @@ services:
 
 volumes:
   db_data: {}
-  wp_data: {}

@@ -14,7 +14,6 @@ const PORTS = {
 	PHPMYADMIN_PORT: 2,
 	MAILPIT_PORT: 3,
 	MAILPIT_SMTP_PORT: 4,
-	XDEBUG_PORT: 5,
 };
 
 const force = process.argv.includes("--force");
@@ -136,8 +135,6 @@ writeFileSync(
 		`WP_HOST=${host}`,
 		`WP_URL=${url}`,
 		...Object.entries(ports).map(([name, port]) => `${name}=${port}`),
-		"# Set to debug and point .vscode/launch.json at XDEBUG_PORT to step through this worktree.",
-		"XDEBUG_MODE=off",
 		"",
 	].join("\n"),
 );

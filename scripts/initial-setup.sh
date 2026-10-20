@@ -1,5 +1,8 @@
-# Install dependencies
-pnpm install
+#!/usr/bin/env bash
+# Installs and configures the development site. Safe to run again: every step skips what is done.
+set -euo pipefail
+
+pnpm install --frozen-lockfile
 
 # Reserve this worktree's ports before Docker uses them; the main checkout keeps the defaults
 npx tsx scripts/worktree-env.ts
@@ -8,33 +11,85 @@ if [ -f .env ]; then
 	. ./.env
 	set +a
 fi
+WP_URL=${WP_URL:-http://wordpress.localhost}
 
+# The stack boots while the dependencies install and the assets build
+mkdir -p logs
+docker compose up -d --wait >logs/docker-up.log 2>&1 &
+docker_up=$!
 ./scripts/composer.sh install
-
-# Build assets
 pnpm run build
+if ! wait "$docker_up"; then
+	cat logs/docker-up.log
+	exit 1
+fi
 
-# Install WordPress
-docker compose run --rm wordpress-cli wp core install --url="${WP_URL:-wordpress.localhost}" --title="WordPress Demo" --admin_name=wordpress --admin_password=wordpress --admin_email=you@example.com
+wp() {
+	docker compose exec -T -u www-data wordpress wp "$@"
+}
 
-# The cached image may ship an older WordPress than the latest WooCommerce requires
-docker compose run --rm wordpress-cli wp core update
-docker compose run --rm wordpress-cli wp core update-db
+if ! wp core is-installed 2>/dev/null; then
+	wp core install --url="$WP_URL" --title="WordPress Demo" --admin_user=wordpress --admin_password=wordpress --admin_email=you@example.com --skip-email
+fi
 
-# Setup permalinks
-docker compose run --rm wordpress-cli wp rewrite structure '/%postname%/'
+# The image may ship an older WordPress than the latest WooCommerce requires
+wp core update
+wp core update-db
 
-# Install plugins
-docker compose run --rm wordpress-cli wp plugin install woocommerce woocommerce-extra-checkout-fields-for-brazil --activate
+# Development mode: report everything, log it to logs/debug.log and load unminified scripts
+wp config set WP_ENVIRONMENT_TYPE development
+wp config set WP_DEBUG true --raw
+wp config set WP_DEBUG_LOG /var/log/debug.log
+wp config set WP_DEBUG_DISPLAY true --raw
+wp config set SCRIPT_DEBUG true --raw
 
-# Activate plugin
-docker compose run --rm wordpress-cli wp plugin activate pagbank-for-woocommerce
+wp rewrite structure '/%postname%/'
 
-# Delete plugins
-docker compose run --rm wordpress-cli wp plugin delete akismet hello
+wp plugin install woocommerce woocommerce-extra-checkout-fields-for-brazil --activate
+wp plugin activate pagbank-for-woocommerce
+wp plugin delete akismet hello 2>/dev/null || true
 
-# Install theme
-docker compose run --rm wordpress-cli wp theme install storefront --activate
+wp theme install storefront --activate
+for theme in $(wp theme list --status=inactive --field=name); do
+	wp theme delete "$theme"
+done
 
-# Remove themes
-docker compose run --rm wordpress-cli wp theme delete twentynineteen twentytwenty twentytwentyone twentytwentytwo twentytwentythree
+# A Brazilian store that is open and ready to check out
+wp option update woocommerce_default_country 'BR:SP'
+wp option update woocommerce_currency BRL
+wp option update woocommerce_store_address 'Rua de Teste, 100'
+wp option update woocommerce_store_city 'São Paulo'
+wp option update woocommerce_store_postcode '01001-000'
+wp option update woocommerce_coming_soon no
+wp option update woocommerce_onboarding_profile '{"skipped":true}' --format=json
+if [ "$(wp post list --post_type=product --format=count)" = 0 ]; then
+	wp wc product create --user=wordpress --name='Produto de teste' --regular_price=10.00 >/dev/null
+fi
+
+# The PagBank connection saved with `pnpm pagbank:save-credentials` spares a new OAuth per worktree
+main_env="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.env"
+connected=
+for environment in production sandbox; do
+	key="PAGBANK_CONNECT_DATA_$(echo "$environment" | tr '[:lower:]' '[:upper:]')"
+	line=$(grep -E "^$key=" "$main_env" 2>/dev/null || true)
+	if [ -n "$line" ]; then
+		value=${line#*=}
+		value=${value#\'}
+		value=${value%\'}
+		wp option update "woocommerce_pagbank_connect_data_$environment" "$value" --format=json
+		connected=$environment
+	fi
+done
+
+# New gateways start enabled on the connected environment, sandbox when both are
+if [ -n "$connected" ]; then
+	for gateway in credit_card debit_card pix boleto pay_with_pagbank checkout; do
+		if ! wp option get "woocommerce_pagbank_${gateway}_settings" >/dev/null 2>&1; then
+			wp option update "woocommerce_pagbank_${gateway}_settings" "{\"enabled\":\"yes\",\"environment\":\"$connected\"}" --format=json
+		fi
+	done
+else
+	echo "No PagBank connection in $main_env; connect the plugin once and run pnpm pagbank:save-credentials."
+fi
+
+echo "Setup complete: $WP_URL (wordpress / wordpress)"
