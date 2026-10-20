@@ -32,7 +32,7 @@ pnpm install
 pnpm run setup
 ```
 
-`pnpm run setup` installs the dependencies, starts the Docker stack, builds the assets and installs WordPress with WooCommerce and Storefront as a Brazilian store (BRL, a test product) with the plugin active. The site runs in development mode: `WP_DEBUG` and `SCRIPT_DEBUG` on, errors shown and logged to `logs/debug.log`. The setup is safe to run again. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
+`pnpm run setup` installs the dependencies, starts the Docker stack, builds the assets and installs WordPress with WooCommerce and Storefront as a Brazilian store in BRL with the plugin active: WooCommerce's sample products, the shop as the home page, and the cart and checkout without a sidebar. The site runs in development mode: `WP_DEBUG` and `SCRIPT_DEBUG` on, errors shown and logged to `logs/debug.log`. The setup is safe to run again. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
 
 | Service | URL |
 | --- | --- |

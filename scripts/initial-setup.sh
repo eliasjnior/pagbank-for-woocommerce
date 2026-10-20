@@ -62,9 +62,20 @@ wp option update woocommerce_store_city 'São Paulo'
 wp option update woocommerce_store_postcode '01001-000'
 wp option update woocommerce_coming_soon no
 wp option update woocommerce_onboarding_profile '{"skipped":true}' --format=json
+
+# WooCommerce's own sample catalogue: simple, variable, grouped and downloadable products with images
 if [ "$(wp post list --post_type=product --format=count)" = 0 ]; then
-	wp wc product create --user=wordpress --name='Produto de teste' --regular_price=10.00 >/dev/null
+	wp plugin install wordpress-importer --activate
+	wp import wp-content/plugins/woocommerce/sample-data/sample_products.xml --authors=skip --skip=image_resize --quiet
+	wp plugin uninstall wordpress-importer --deactivate
 fi
+
+# The shop is the home page, and the cart and checkout use Storefront's template without a sidebar
+wp option update show_on_front page
+wp option update page_on_front "$(wp option get woocommerce_shop_page_id)"
+for page in cart checkout; do
+	wp post meta update "$(wp option get "woocommerce_${page}_page_id")" _wp_page_template template-fullwidth.php
+done
 
 # The PagBank connection saved with `pnpm pagbank:save-credentials` spares a new OAuth per worktree
 main_env="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.env"
