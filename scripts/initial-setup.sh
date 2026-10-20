@@ -77,10 +77,16 @@ for page in cart checkout; do
 	wp post meta update "$(wp option get "woocommerce_${page}_page_id")" _wp_page_template template-fullwidth.php
 done
 
+# Checkout is the Blocks one; the shortcode checkout stays reachable for testing the classic flow
+if [ -z "$(wp post list --post_type=page --name=legacy-checkout --field=ID)" ]; then
+	wp post create --post_type=page --post_status=publish --post_title='Legacy checkout' --post_name=legacy-checkout \
+		--post_content='<!-- wp:shortcode -->[woocommerce_checkout]<!-- /wp:shortcode -->' \
+		--meta_input='{"_wp_page_template":"template-fullwidth.php"}'
+fi
+
 # The PagBank connection saved with `pnpm pagbank:save-credentials` spares a new OAuth per worktree
 main_env="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.env"
-connected=
-for environment in production sandbox; do
+for environment in sandbox production; do
 	key="PAGBANK_CONNECT_DATA_$(echo "$environment" | tr '[:lower:]' '[:upper:]')"
 	line=$(grep -E "^$key=" "$main_env" 2>/dev/null || true)
 	if [ -n "$line" ]; then
@@ -88,19 +94,17 @@ for environment in production sandbox; do
 		value=${value#\'}
 		value=${value%\'}
 		wp option update "woocommerce_pagbank_connect_data_$environment" "$value" --format=json
-		connected=$environment
+	elif [ "$environment" = sandbox ]; then
+		echo "No sandbox PagBank connection in $main_env; connect the plugin once and run pnpm pagbank:save-credentials."
 	fi
 done
 
-# New gateways start enabled on the connected environment, sandbox when both are
-if [ -n "$connected" ]; then
-	for gateway in credit_card debit_card pix boleto pay_with_pagbank checkout; do
-		if ! wp option get "woocommerce_pagbank_${gateway}_settings" >/dev/null 2>&1; then
-			wp option update "woocommerce_pagbank_${gateway}_settings" "{\"enabled\":\"yes\",\"environment\":\"$connected\"}" --format=json
-		fi
-	done
-else
-	echo "No PagBank connection in $main_env; connect the plugin once and run pnpm pagbank:save-credentials."
-fi
+# A new site starts with every PagBank gateway enabled on sandbox, even when production is
+# connected too; settings saved later are left alone.
+for gateway in $(wp wc payment_gateway list --user=wordpress --field=id | grep '^pagbank_'); do
+	if ! wp option get "woocommerce_${gateway}_settings" >/dev/null 2>&1; then
+		wp option update "woocommerce_${gateway}_settings" '{"enabled":"yes","environment":"sandbox"}' --format=json
+	fi
+done
 
 echo "Setup complete: $WP_URL (wordpress / wordpress)"

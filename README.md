@@ -32,7 +32,7 @@ pnpm install
 pnpm run setup
 ```
 
-`pnpm run setup` installs the dependencies, starts the Docker stack, builds the assets and installs WordPress with WooCommerce and Storefront as a Brazilian store in BRL with the plugin active: WooCommerce's sample products, the shop as the home page, and the cart and checkout without a sidebar. The site runs in development mode: `WP_DEBUG` and `SCRIPT_DEBUG` on, errors shown and logged to `logs/debug.log`. The setup is safe to run again. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
+`pnpm run setup` installs the dependencies, starts the Docker stack, builds the assets and installs WordPress with WooCommerce and Storefront as a Brazilian store in BRL with the plugin active: WooCommerce's sample products, the shop as the home page, the Blocks checkout at `/checkout/` and the shortcode one at `/legacy-checkout/`, both without a sidebar. The site runs in development mode: `WP_DEBUG` and `SCRIPT_DEBUG` on, errors shown and logged to `logs/debug.log`. The setup is safe to run again. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
 
 | Service | URL |
 | --- | --- |
@@ -50,7 +50,7 @@ Connect the plugin to PagBank once on the main checkout, then save the connectio
 pnpm pagbank:save-credentials
 ```
 
-Every setup, in any worktree, loads the sandbox and production connections from there and enables the PagBank gateways, so no worktree needs a new OAuth. Run the command again whenever you reconnect.
+Every setup, in any worktree, loads the sandbox and production connections from there, so no worktree needs a new OAuth. A new site starts with every PagBank gateway enabled on sandbox, even when production is connected too. Run the command again whenever you reconnect.
 
 ### Parallel worktrees
 
