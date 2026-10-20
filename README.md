@@ -95,6 +95,14 @@ The zip built for each PR is attached to the workflow run, so it can be installe
 
 The workflow reads the version from `package.json`, reruns CI, tags the commit as `X.Y.Z`, and publishes a GitHub release with the production zip and the changelog entry as notes. The zip carries a build provenance attestation, which `gh attestation verify <zip> --repo <owner>/<repo>` checks.
 
+## Deploying to WordPress.org
+
+Run the **Deploy to WordPress.org** workflow (Actions → Deploy to WordPress.org → Run workflow) from the ref whose `package.json` holds the version to ship. It downloads that version's GitHub release zip, verifies its provenance attestation, and imports it into `tags/X.Y.Z` of the plugin's SVN repository. It refuses when the release is missing or still a draft, and when the SVN tag already exists. `trunk/` and `assets/` are never touched.
+
+`dry-run` is on by default: the run does every check and lists the files it would import, but writes nothing. Untick it to deploy. The SVN write runs in the `wordpress-org` environment, which holds the `SVN_USERNAME` and `SVN_PASSWORD` secrets and can require a reviewer's approval.
+
+WordPress.org serves the version named by `Stable tag` in `trunk/readme.txt`, so a new tag is not the default download until trunk is updated to point at it.
+
 ## Contributing
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced locally by Husky and commitlint and again in CI. `main` is protected: changes land through pull requests only.
