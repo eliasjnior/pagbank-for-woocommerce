@@ -17,6 +17,7 @@ use PagBank_WooCommerce\Presentation\Api;
 use PagBank_WooCommerce\Presentation\ApiHelpers;
 use PagBank_WooCommerce\Presentation\Connect;
 use PagBank_WooCommerce\Presentation\Helpers;
+use PagBank_WooCommerce\Presentation\ManualReview;
 use PagBank_WooCommerce\Presentation\PaymentToken;
 use WC_Order;
 use WC_Order_Item_Fee;
@@ -85,6 +86,11 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 	public bool $threeds_allow_unsupported;
 
 	/**
+	 * Only pre-authorize cards not eligible for 3DS, until the store reviews them.
+	 */
+	public bool $threeds_manual_review;
+
+	/**
 	 * Card type.
 	 *
 	 * @var string (CREDIT_CARD, DEBIT_CARD)
@@ -144,6 +150,8 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 		$this->threeds_enabled           = 'yes' === $this->get_option( 'threeds_enabled' );
 		$this->threeds_allow_unsupported = $this->threeds_enabled
 			&& 'yes' === $this->get_option( 'threeds_allow_unsupported' );
+		$this->threeds_manual_review     = $this->threeds_allow_unsupported
+			&& 'yes' === $this->get_option( 'threeds_manual_review' );
 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 
@@ -291,6 +299,15 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				'label'       => __( 'Aceitar cartões não elegíveis ao 3DS', 'pagbank-for-woocommerce' ),
 				// phpcs:ignore Generic.Files.LineLength -- Translation string cannot be split.
 				'description' => __( 'Alguns emissores não oferecem 3DS. Com esta opção, esses cartões são cobrados sem autenticação e a responsabilidade por chargeback de fraude permanece com a loja.', 'pagbank-for-woocommerce' ),
+				'default'     => 'no',
+				'desc_tip'    => true,
+			),
+			'threeds_manual_review'              => array(
+				'title'       => __( 'Revisão manual', 'pagbank-for-woocommerce' ),
+				'type'        => 'checkbox',
+				'label'       => __( 'Revisar manualmente os pagamentos sem 3DS', 'pagbank-for-woocommerce' ),
+				// phpcs:ignore Generic.Files.LineLength -- Translation string cannot be split.
+				'description' => __( 'O pagamento é apenas pré-autorizado e o pedido fica Aguardando até você aprovar ou recusar na tela do pedido. A pré-autorização vale por poucos dias (em geral 5) e o prazo exato aparece em cada pedido; sem aprovação até lá, o PagBank a cancela e o pedido é cancelado. Não se aplica a assinaturas.', 'pagbank-for-woocommerce' ),
 				'default'     => 'no',
 				'desc_tip'    => true,
 			),
@@ -1109,6 +1126,15 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				$threeds_id
 			);
 
+			// Subscriptions need the first charge settled, so they are never held for review.
+			$is_manual_review = $is_threeds_unsupported
+				&& $this->threeds_manual_review
+				&& ! $order_contains_subscription;
+
+			if ( $is_manual_review ) {
+				$data['charges'][0]['payment_method']['capture'] = false;
+			}
+
 			$response = $this->api->create_order( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id(), ApiHelpers::get_request_submission_id() ) );
 
 			if ( is_wp_error( $response ) ) {
@@ -1140,6 +1166,8 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 				}
 			}
 
+			$is_authorized_for_review = $is_manual_review && 'AUTHORIZED' === $charge['status'];
+
 			if ( $charge['status'] === 'IN_ANALYSIS' ) {
 				$order->update_status( 'on-hold', __( 'O PagBank está analisando a transação.', 'pagbank-for-woocommerce' ) );
 			} elseif ( $charge['status'] === 'DECLINED' ) {
@@ -1149,7 +1177,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 					'result'  => 'failure',
 					'message' => __( 'O pagamento foi recusado.', 'pagbank-for-woocommerce' ),
 				);
-			} elseif ( $charge['status'] !== 'PAID' ) {
+			} elseif ( $charge['status'] !== 'PAID' && ! $is_authorized_for_review ) {
 				Helpers::add_payment_error_notice( __( 'Houve um erro no pagamento. Por favor, entre em contato com o suporte.', 'pagbank-for-woocommerce' ) );
 
 				return array(
@@ -1166,6 +1194,15 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 
 			$this->save_order_meta_data( $order, $response, $data, $card_payment_token );
 			$this->save_threeds_result( $order, $charge, $is_threeds_unsupported );
+
+			if ( $is_authorized_for_review ) {
+				ManualReview::start( $order, $charge );
+
+				return array(
+					'result'   => 'success',
+					'redirect' => $this->get_return_url( $order ),
+				);
+			}
 
 			$charge_id = $charge['id'];
 

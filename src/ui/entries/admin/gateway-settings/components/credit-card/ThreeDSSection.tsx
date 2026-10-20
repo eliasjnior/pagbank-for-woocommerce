@@ -19,6 +19,11 @@ export const ThreeDSSection = () => {
 		name: "threeds_enabled" as keyof GatewaySettings,
 	}) as YesNo;
 
+	const allowUnsupported = useWatch({
+		control: form.control,
+		name: "threeds_allow_unsupported" as keyof GatewaySettings,
+	}) as YesNo;
+
 	return (
 		<SettingsCard title={__("Autenticação 3DS", "pagbank-for-woocommerce")}>
 			<div className="pagbank-settings-field">
@@ -46,6 +51,22 @@ export const ThreeDSSection = () => {
 						)}
 					/>
 				</div>
+
+				<AnimatedField visible={allowUnsupported === "yes"}>
+					<div className="pagbank-settings-field">
+						<FormToggle
+							name={"threeds_manual_review" as keyof GatewaySettings}
+							label={__(
+								"Revisar manualmente os pagamentos sem 3DS",
+								"pagbank-for-woocommerce",
+							)}
+							help={__(
+								"O pagamento é apenas pré-autorizado e o pedido fica Aguardando até você aprovar ou recusar na tela do pedido. A pré-autorização vale por poucos dias (em geral 5) e o prazo exato aparece em cada pedido; sem aprovação até lá, o PagBank a cancela e o pedido é cancelado. Não se aplica a assinaturas.",
+								"pagbank-for-woocommerce",
+							)}
+						/>
+					</div>
+				</AnimatedField>
 			</AnimatedField>
 		</SettingsCard>
 	);
