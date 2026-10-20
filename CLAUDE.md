@@ -294,6 +294,8 @@ Plugin detection:
 
 When either plugin provides a field group, the native fields for that group are not inserted. `ApiHelpers` reads the Blocks additional fields first and falls back to the legacy `_billing_*` meta, so every combination resolves.
 
+My Account address pages: WooCommerce adds every address-location Blocks field to the edit address form, next to the classic fields that `woocommerce_billing_fields` inserts there too. `CheckoutBlocksFields::maybe_deregister_on_my_account()` deregisters the `pagbank/*` fields on the `edit-address` endpoint, so the classic fields (ours or a third-party plugin's) are the only editor. Deregistering, not filtering the form, matters: WooCommerce saves every registered additional field missing from the POST as empty. The two customer meta stores stay in sync both ways: Blocks writes also go to the interop keys (`save_field_to_legacy_meta`), a My Account save is mirrored back to `_wc_{group}/pagbank/*`, and each side falls back to the other when empty (`get_customer_meta()`, `default_from_legacy_meta()`).
+
 ## Development Environment Details
 
 - WordPress runs on PHP 8.3 from the image in `docker/wordpress/` (WP-CLI and msmtp, no Xdebug); `pnpm wp` runs WP-CLI inside it as `www-data`
