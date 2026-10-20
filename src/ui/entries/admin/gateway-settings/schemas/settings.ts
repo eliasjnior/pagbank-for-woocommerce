@@ -58,25 +58,11 @@ export const creditCardSettingsSchema = z
 		transfer_of_interest_enabled: yesNoSchema,
 		maximum_installments_interest_free: z.string().min(1).catch("0"),
 		threeds_enabled: yesNoSchema,
-		threeds_allow_unsupported: yesNoSchema,
-		threeds_manual_review: yesNoSchema,
 	})
 	.passthrough();
 
 // Credit Card submission schema — normalizes hidden fields before API call
-export const creditCardSubmissionSchema = creditCardSettingsSchema.transform((input) => {
-	const data =
-		input.threeds_enabled === "no" || input.threeds_allow_unsupported === "no"
-			? {
-					...input,
-					threeds_allow_unsupported:
-						input.threeds_enabled === "no"
-							? ("no" as const)
-							: input.threeds_allow_unsupported,
-					threeds_manual_review: "no" as const,
-				}
-			: input;
-
+export const creditCardSubmissionSchema = creditCardSettingsSchema.transform((data) => {
 	if (data.installments_enabled === "no") {
 		return {
 			...data,

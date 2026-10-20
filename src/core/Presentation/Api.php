@@ -487,67 +487,6 @@ class Api {
 	}
 
 	/**
-	 * Capture a pre-authorized charge.
-	 *
-	 * @param string      $charge_id       The charge ID.
-	 * @param float       $amount          The amount to capture.
-	 * @param string|null $idempotency_key Optional idempotency key sent as `x-idempotency-key`.
-	 *
-	 * @return array|WP_Error The captured charge.
-	 */
-	public function capture( string $charge_id, float $amount, ?string $idempotency_key = null ) {
-		$url = $this->get_api_url( 'charges/' . rawurlencode( $charge_id ) . '/capture' );
-
-		$data = array(
-			'amount' => array(
-				'value' => Helpers::format_money_cents( $amount ),
-			),
-		);
-
-		$headers = array(
-			'Authorization' => $this->connect->get_access_token(),
-			'Content-Type'  => 'application/json',
-		);
-
-		if ( ! empty( $idempotency_key ) ) {
-			$headers['x-idempotency-key'] = $idempotency_key;
-		}
-
-		$this->log_api_request( 'POST', $url, $data, $headers );
-
-		$response = $this->request(
-			$url,
-			array(
-				'method'  => 'POST',
-				'headers' => $headers,
-				'body'    => $this->json_encode( $data ),
-			)
-		);
-
-		if ( is_wp_error( $response ) ) {
-			$this->log_api_request_error( $response );
-
-			return $response;
-		}
-
-		$response_code         = wp_remote_retrieve_response_code( $response );
-		$response_body         = wp_remote_retrieve_body( $response );
-		$decoded_response_body = json_decode( $response_body, true );
-
-		$this->log_api_response( $response_code, $response_body );
-
-		if ( ! in_array( $response_code, array( 200, 201 ), true ) || ! is_array( $decoded_response_body ) ) {
-			return new WP_Error(
-				'pagbank_charge_capture_failed',
-				'PagBank charge capture failed',
-				$decoded_response_body
-			);
-		}
-
-		return $decoded_response_body;
-	}
-
-	/**
 	 * Get charge fees.
 	 *
 	 * @param float  $amount                         The charge value.

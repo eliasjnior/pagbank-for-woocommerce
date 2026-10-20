@@ -190,7 +190,6 @@ export const Content = ({
 
 				// 3DS Authentication if enabled
 				let threedsId: string | undefined;
-				let threedsStatus: string | undefined;
 
 				if (is3DSEnabled) {
 					const cellphone = parsePhoneNumber(
@@ -256,10 +255,6 @@ export const Content = ({
 
 					const result = await authenticate(threeDSParams);
 
-					if (result.status !== "AUTH_FLOW_COMPLETED") {
-						console.warn("PagBank 3DS authentication status:", result.status);
-					}
-
 					if (result.status === "CHANGE_PAYMENT_METHOD") {
 						return {
 							type: emitResponse.responseTypes.ERROR,
@@ -272,16 +267,13 @@ export const Content = ({
 						threedsId = result.id;
 					}
 
+					// AUTH_NOT_SUPPORTED: Block the transaction - 3DS authentication is required
 					if (result.status === "AUTH_NOT_SUPPORTED") {
-						if (settings.threeds_allow_unsupported) {
-							threedsStatus = result.status;
-						} else {
-							return {
-								type: emitResponse.responseTypes.ERROR,
-								message: settings.messages.threeds_not_supported,
-								messageContext: emitResponse.noticeContexts.PAYMENTS,
-							};
-						}
+						return {
+							type: emitResponse.responseTypes.ERROR,
+							message: settings.messages.threeds_not_supported,
+							messageContext: emitResponse.noticeContexts.PAYMENTS,
+						};
 					}
 				}
 
@@ -297,9 +289,6 @@ export const Content = ({
 							"pagbank_credit_card-installments": installments,
 							...(threedsId && {
 								"pagbank_credit_card-threeds-id": threedsId,
-							}),
-							...(threedsStatus && {
-								"pagbank_credit_card-threeds-status": threedsStatus,
 							}),
 							...(shouldSavePayment && {
 								"wc-pagbank_credit_card-payment-token": "new",
