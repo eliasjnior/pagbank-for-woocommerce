@@ -31,7 +31,6 @@ use PagBank_WooCommerce\Presentation\Blocks\CheckoutBlocksFields;
 use PagBank_WooCommerce\Presentation\ConnectAjaxApi;
 use PagBank_WooCommerce\Presentation\Helpers;
 use PagBank_WooCommerce\Presentation\Hooks;
-use PagBank_WooCommerce\Presentation\ManualReview;
 use PagBank_WooCommerce\Presentation\LegacyCheckoutFields;
 use PagBank_WooCommerce\Presentation\OrderStatusApi;
 use PagBank_WooCommerce\Presentation\PaymentGateways;
@@ -79,7 +78,6 @@ add_action(
 	AddressFormatting::get_instance();
 	AdminOrderFields::get_instance();
 	BlocksPaymentMethods::get_instance();
-	ManualReview::get_instance();
 
 	if ( Helpers::is_wcfm_activated() ) {
 		WcfmIntegration::get_instance();
