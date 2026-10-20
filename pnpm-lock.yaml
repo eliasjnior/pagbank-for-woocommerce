@@ -289,7 +289,7 @@ importers:
         version: 7.0.2
       vite:
         specifier: ^7.2.7
-        version: 7.3.5(@types/node@24.10.2)(jiti@2.6.1)(sass@1.95.1)(terser@5.48.0)(tsx@4.21.0)
+        version: 7.3.7(@types/node@24.10.2)(jiti@2.6.1)(sass@1.95.1)(terser@5.48.0)(tsx@4.21.0)
 
 packages:
 
@@ -4583,8 +4583,8 @@ packages:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
     hasBin: true
 
-  vite@7.3.5:
-    resolution: {integrity: sha512-KuOaNhcnGFN2zIPGA7wRmzF+lJA1sea7rHq17aiJ++9lzY1WWG6Jpwqwe1KNbRVPIqHmr8GLYx7jbrQcN/7/ww==}
+  vite@7.3.7:
+    resolution: {integrity: sha512-AHEzTORMbi7/7aXp7w7KZ5+DCUdSeLsJz0grY8xHpc9DHdYb0vQu6DqJfm2tOw3gDExNgPgnJTXxM6syYFHaCA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -8352,7 +8352,7 @@ snapshots:
       has-property-descriptors: 1.0.2
       has-proto: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       internal-slot: 1.1.0
       is-array-buffer: 3.0.5
       is-callable: 1.2.7
@@ -8408,7 +8408,7 @@ snapshots:
 
   es-shim-unscopables@1.1.0:
     dependencies:
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   es-to-primitive@1.3.0:
     dependencies:
@@ -8589,7 +8589,7 @@ snapshots:
       call-bound: 1.0.4
       define-properties: 1.2.1
       functions-have-names: 1.2.3
-      hasown: 2.0.2
+      hasown: 2.0.4
       is-callable: 1.2.7
 
   functions-have-names@1.2.3: {}
@@ -8801,7 +8801,7 @@ snapshots:
   internal-slot@1.1.0:
     dependencies:
       es-errors: 1.3.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       side-channel: 1.1.0
 
   is-arguments@1.2.0:
@@ -8900,7 +8900,7 @@ snapshots:
       call-bound: 1.0.4
       gopd: 1.2.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   is-set@2.0.3: {}
 
@@ -9349,7 +9349,7 @@ snapshots:
     dependencies:
       call-bound: 1.0.4
       es-errors: 1.3.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       isarray: 2.0.5
       object.assign: 4.1.7
       own-keys: 1.0.1
@@ -10201,7 +10201,7 @@ snapshots:
 
   uuid@9.0.1: {}
 
-  vite@7.3.5(@types/node@24.10.2)(jiti@2.6.1)(sass@1.95.1)(terser@5.48.0)(tsx@4.21.0):
+  vite@7.3.7(@types/node@24.10.2)(jiti@2.6.1)(sass@1.95.1)(terser@5.48.0)(tsx@4.21.0):
     dependencies:
       esbuild: 0.27.1
       fdir: 6.5.0(picomatch@4.0.3)
