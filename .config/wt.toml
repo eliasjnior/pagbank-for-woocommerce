@@ -8,3 +8,8 @@ env = "pnpm worktree:env"
 # The worktree's wp/ folder goes with it, so its database volume would only be left orphaned.
 [pre-remove]
 docker = "docker compose down --volumes --remove-orphans || true"
+
+# `pnpm worktree:env` records each worktree's URL as a Worktrunk var on its branch; the main
+# checkout records none and runs on the default URL.
+[list]
+url = "{{ vars.wpurl | default('http://wordpress.localhost:80' if branch == 'main' else '') }}"

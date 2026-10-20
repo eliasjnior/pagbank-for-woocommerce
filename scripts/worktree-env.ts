@@ -24,14 +24,30 @@ function git(...args: string[]) {
 	return execFileSync("git", ["-C", rootDir, ...args], { encoding: "utf8" }).trim();
 }
 
-function readSlot(file: string) {
+function readEnv(file: string, name: string) {
 	if (!existsSync(file)) {
 		return undefined;
 	}
 
-	const slot = readFileSync(file, "utf8").match(/^WORKTREE_SLOT=(\d+)$/m)?.[1];
+	return readFileSync(file, "utf8").match(new RegExp(`^${name}=(.+)$`, "m"))?.[1];
+}
+
+function readSlot(file: string) {
+	const slot = readEnv(file, "WORKTREE_SLOT");
 
 	return slot === undefined ? undefined : Number(slot);
+}
+
+// Feeds the URL column of `wt list` (`[list] url` in .config/wt.toml), which can only read
+// Worktrunk's per-branch vars.
+function recordUrl(url: string) {
+	try {
+		execFileSync("wt", ["-C", rootDir, "config", "state", "vars", "set", `wpurl=${url}`], {
+			stdio: "ignore",
+		});
+	} catch {
+		// Worktrunk is optional, and a detached HEAD has no branch to store the URL on.
+	}
 }
 
 function isPortFree(port: number) {
@@ -62,6 +78,7 @@ if (git("rev-parse", "--git-dir") === git("rev-parse", "--git-common-dir") && !f
 }
 
 if (readSlot(envFile) !== undefined && !force) {
+	recordUrl(readEnv(envFile, "WP_URL") ?? "");
 	console.log(`.env already reserves slot ${readSlot(envFile)}. Use --force to pick a new one.`);
 	process.exit(0);
 }
@@ -114,6 +131,8 @@ writeFileSync(
 		"",
 	].join("\n"),
 );
+
+recordUrl(`http://localhost:${ports.WP_HTTP_PORT}`);
 
 console.log(`Reserved slot ${slot} for ${project}:`);
 console.log(`  WordPress   http://localhost:${ports.WP_HTTP_PORT}`);
