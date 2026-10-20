@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-02T10:39:56+00:00\n"
+"POT-Creation-Date: 2026-10-20T12:56:47+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pagbank-for-woocommerce\n"
@@ -32,7 +32,7 @@ msgstr ""
 #. Author of the plugin
 #: pagbank-for-woocommerce.php
 #: src/core/Marketplace/WcfmIntegration.php:275
-#: src/core/Presentation/ApiHelpers.php:634
+#: src/core/Presentation/ApiHelpers.php:666
 msgid "PagBank"
 msgstr ""
 
@@ -50,13 +50,13 @@ msgid "Aceite pagamentos via Apple Pay através do PagBank."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:86
-#: src/core/Gateways/BoletoPaymentGateway.php:91
-#: src/core/Gateways/CheckoutPaymentGateway.php:96
+#: src/core/Gateways/BoletoPaymentGateway.php:92
+#: src/core/Gateways/CheckoutPaymentGateway.php:97
 #: src/core/Gateways/CreditCardPaymentGateway.php:188
 #: src/core/Gateways/DebitCardPaymentGateway.php:68
 #: src/core/Gateways/GooglePayPaymentGateway.php:86
-#: src/core/Gateways/PayWithPagBankGateway.php:91
-#: src/core/Gateways/PixPaymentGateway.php:92
+#: src/core/Gateways/PayWithPagBankGateway.php:92
+#: src/core/Gateways/PixPaymentGateway.php:93
 msgid "Habilitar/Desabilitar"
 msgstr ""
 
@@ -65,93 +65,93 @@ msgid "Habilitar Apple Pay"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:92
-#: src/core/Gateways/BoletoPaymentGateway.php:97
-#: src/core/Gateways/CheckoutPaymentGateway.php:102
+#: src/core/Gateways/BoletoPaymentGateway.php:98
+#: src/core/Gateways/CheckoutPaymentGateway.php:103
 #: src/core/Gateways/CreditCardPaymentGateway.php:194
 #: src/core/Gateways/DebitCardPaymentGateway.php:74
 #: src/core/Gateways/GooglePayPaymentGateway.php:92
-#: src/core/Gateways/PayWithPagBankGateway.php:97
-#: src/core/Gateways/PixPaymentGateway.php:98
+#: src/core/Gateways/PayWithPagBankGateway.php:98
+#: src/core/Gateways/PixPaymentGateway.php:99
 #: dist/admin/gateway-settings.js:1
 msgid "Ambiente"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:94
-#: src/core/Gateways/BoletoPaymentGateway.php:99
-#: src/core/Gateways/CheckoutPaymentGateway.php:104
+#: src/core/Gateways/BoletoPaymentGateway.php:100
+#: src/core/Gateways/CheckoutPaymentGateway.php:105
 #: src/core/Gateways/CreditCardPaymentGateway.php:196
 #: src/core/Gateways/DebitCardPaymentGateway.php:76
 #: src/core/Gateways/GooglePayPaymentGateway.php:94
-#: src/core/Gateways/PayWithPagBankGateway.php:99
-#: src/core/Gateways/PixPaymentGateway.php:100
+#: src/core/Gateways/PayWithPagBankGateway.php:100
+#: src/core/Gateways/PixPaymentGateway.php:101
 msgid "Isso irá definir o ambiente de testes ou produção."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:97
-#: src/core/Gateways/BoletoPaymentGateway.php:102
-#: src/core/Gateways/CheckoutPaymentGateway.php:107
+#: src/core/Gateways/BoletoPaymentGateway.php:103
+#: src/core/Gateways/CheckoutPaymentGateway.php:108
 #: src/core/Gateways/CreditCardPaymentGateway.php:199
 #: src/core/Gateways/DebitCardPaymentGateway.php:79
 #: src/core/Gateways/GooglePayPaymentGateway.php:97
-#: src/core/Gateways/PayWithPagBankGateway.php:102
-#: src/core/Gateways/PixPaymentGateway.php:103
+#: src/core/Gateways/PayWithPagBankGateway.php:103
+#: src/core/Gateways/PixPaymentGateway.php:104
 msgid "Ambiente de testes"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:98
-#: src/core/Gateways/BoletoPaymentGateway.php:103
-#: src/core/Gateways/CheckoutPaymentGateway.php:108
+#: src/core/Gateways/BoletoPaymentGateway.php:104
+#: src/core/Gateways/CheckoutPaymentGateway.php:109
 #: src/core/Gateways/CreditCardPaymentGateway.php:200
 #: src/core/Gateways/DebitCardPaymentGateway.php:80
 #: src/core/Gateways/GooglePayPaymentGateway.php:98
-#: src/core/Gateways/PayWithPagBankGateway.php:103
-#: src/core/Gateways/PixPaymentGateway.php:104
+#: src/core/Gateways/PayWithPagBankGateway.php:104
+#: src/core/Gateways/PixPaymentGateway.php:105
 #: dist/admin/gateway-settings.js:1
 msgid "Produção"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:103
-#: src/core/Gateways/BoletoPaymentGateway.php:108
-#: src/core/Gateways/CheckoutPaymentGateway.php:113
+#: src/core/Gateways/BoletoPaymentGateway.php:109
+#: src/core/Gateways/CheckoutPaymentGateway.php:114
 #: src/core/Gateways/CreditCardPaymentGateway.php:205
 #: src/core/Gateways/DebitCardPaymentGateway.php:85
 #: src/core/Gateways/GooglePayPaymentGateway.php:103
-#: src/core/Gateways/PayWithPagBankGateway.php:108
-#: src/core/Gateways/PixPaymentGateway.php:109
+#: src/core/Gateways/PayWithPagBankGateway.php:109
+#: src/core/Gateways/PixPaymentGateway.php:110
 msgid "Conta PagBank"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:105
-#: src/core/Gateways/BoletoPaymentGateway.php:110
-#: src/core/Gateways/CheckoutPaymentGateway.php:115
+#: src/core/Gateways/BoletoPaymentGateway.php:111
+#: src/core/Gateways/CheckoutPaymentGateway.php:116
 #: src/core/Gateways/CreditCardPaymentGateway.php:207
 #: src/core/Gateways/DebitCardPaymentGateway.php:87
 #: src/core/Gateways/GooglePayPaymentGateway.php:105
-#: src/core/Gateways/PayWithPagBankGateway.php:110
-#: src/core/Gateways/PixPaymentGateway.php:111
+#: src/core/Gateways/PayWithPagBankGateway.php:111
+#: src/core/Gateways/PixPaymentGateway.php:112
 msgid "Conecte a sua conta PagBank para aceitar pagamentos."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:108
-#: src/core/Gateways/BoletoPaymentGateway.php:113
-#: src/core/Gateways/CheckoutPaymentGateway.php:118
+#: src/core/Gateways/BoletoPaymentGateway.php:114
+#: src/core/Gateways/CheckoutPaymentGateway.php:119
 #: src/core/Gateways/CreditCardPaymentGateway.php:210
 #: src/core/Gateways/DebitCardPaymentGateway.php:90
 #: src/core/Gateways/GooglePayPaymentGateway.php:108
-#: src/core/Gateways/PayWithPagBankGateway.php:113
-#: src/core/Gateways/PixPaymentGateway.php:114
+#: src/core/Gateways/PayWithPagBankGateway.php:114
+#: src/core/Gateways/PixPaymentGateway.php:115
 #: dist/admin/gateway-settings.js:1
 msgid "Título"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:110
-#: src/core/Gateways/BoletoPaymentGateway.php:115
-#: src/core/Gateways/CheckoutPaymentGateway.php:120
+#: src/core/Gateways/BoletoPaymentGateway.php:116
+#: src/core/Gateways/CheckoutPaymentGateway.php:121
 #: src/core/Gateways/CreditCardPaymentGateway.php:212
 #: src/core/Gateways/DebitCardPaymentGateway.php:92
 #: src/core/Gateways/GooglePayPaymentGateway.php:110
-#: src/core/Gateways/PayWithPagBankGateway.php:115
-#: src/core/Gateways/PixPaymentGateway.php:116
+#: src/core/Gateways/PayWithPagBankGateway.php:116
+#: src/core/Gateways/PixPaymentGateway.php:117
 msgid "Isso irá controlar o título que o cliente verá durante o checkout."
 msgstr ""
 
@@ -162,25 +162,25 @@ msgid "Apple Pay"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:115
-#: src/core/Gateways/BoletoPaymentGateway.php:120
-#: src/core/Gateways/CheckoutPaymentGateway.php:125
+#: src/core/Gateways/BoletoPaymentGateway.php:121
+#: src/core/Gateways/CheckoutPaymentGateway.php:126
 #: src/core/Gateways/CreditCardPaymentGateway.php:217
 #: src/core/Gateways/DebitCardPaymentGateway.php:97
 #: src/core/Gateways/GooglePayPaymentGateway.php:115
-#: src/core/Gateways/PayWithPagBankGateway.php:120
-#: src/core/Gateways/PixPaymentGateway.php:121
+#: src/core/Gateways/PayWithPagBankGateway.php:121
+#: src/core/Gateways/PixPaymentGateway.php:122
 #: dist/admin/gateway-settings.js:1
 msgid "Descrição"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:117
-#: src/core/Gateways/BoletoPaymentGateway.php:122
-#: src/core/Gateways/CheckoutPaymentGateway.php:127
+#: src/core/Gateways/BoletoPaymentGateway.php:123
+#: src/core/Gateways/CheckoutPaymentGateway.php:128
 #: src/core/Gateways/CreditCardPaymentGateway.php:219
 #: src/core/Gateways/DebitCardPaymentGateway.php:99
 #: src/core/Gateways/GooglePayPaymentGateway.php:117
-#: src/core/Gateways/PayWithPagBankGateway.php:122
-#: src/core/Gateways/PixPaymentGateway.php:123
+#: src/core/Gateways/PayWithPagBankGateway.php:123
+#: src/core/Gateways/PixPaymentGateway.php:124
 msgid "Isso irá controlar a descrição que o cliente verá durante o checkout."
 msgstr ""
 
@@ -189,35 +189,35 @@ msgid "Pague de forma rápida e segura com o Apple Pay."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:122
-#: src/core/Gateways/BoletoPaymentGateway.php:137
-#: src/core/Gateways/CheckoutPaymentGateway.php:144
+#: src/core/Gateways/BoletoPaymentGateway.php:138
+#: src/core/Gateways/CheckoutPaymentGateway.php:145
 #: src/core/Gateways/CreditCardPaymentGateway.php:282
 #: src/core/Gateways/DebitCardPaymentGateway.php:104
 #: src/core/Gateways/GooglePayPaymentGateway.php:122
-#: src/core/Gateways/PayWithPagBankGateway.php:127
-#: src/core/Gateways/PixPaymentGateway.php:138
+#: src/core/Gateways/PayWithPagBankGateway.php:128
+#: src/core/Gateways/PixPaymentGateway.php:139
 msgid "Logs para depuração"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:124
-#: src/core/Gateways/BoletoPaymentGateway.php:139
-#: src/core/Gateways/CheckoutPaymentGateway.php:146
+#: src/core/Gateways/BoletoPaymentGateway.php:140
+#: src/core/Gateways/CheckoutPaymentGateway.php:147
 #: src/core/Gateways/CreditCardPaymentGateway.php:284
 #: src/core/Gateways/DebitCardPaymentGateway.php:106
 #: src/core/Gateways/GooglePayPaymentGateway.php:124
-#: src/core/Gateways/PayWithPagBankGateway.php:129
-#: src/core/Gateways/PixPaymentGateway.php:140
+#: src/core/Gateways/PayWithPagBankGateway.php:130
+#: src/core/Gateways/PixPaymentGateway.php:141
 msgid "Ativar logs"
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:125
-#: src/core/Gateways/BoletoPaymentGateway.php:140
-#: src/core/Gateways/CheckoutPaymentGateway.php:147
+#: src/core/Gateways/BoletoPaymentGateway.php:141
+#: src/core/Gateways/CheckoutPaymentGateway.php:148
 #: src/core/Gateways/CreditCardPaymentGateway.php:285
 #: src/core/Gateways/DebitCardPaymentGateway.php:107
 #: src/core/Gateways/GooglePayPaymentGateway.php:125
-#: src/core/Gateways/PayWithPagBankGateway.php:130
-#: src/core/Gateways/PixPaymentGateway.php:141
+#: src/core/Gateways/PayWithPagBankGateway.php:131
+#: src/core/Gateways/PixPaymentGateway.php:142
 msgid "Isso irá ativar os logs para depuração para auxiliar em caso de suporte."
 msgstr ""
 
@@ -227,15 +227,15 @@ msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:172
 #: src/core/Gateways/ApplePayPaymentGateway.php:176
-#: src/core/Gateways/BoletoPaymentGateway.php:179
-#: src/core/Gateways/BoletoPaymentGateway.php:183
-#: src/core/Gateways/CheckoutPaymentGateway.php:187
-#: src/core/Gateways/CheckoutPaymentGateway.php:191
+#: src/core/Gateways/BoletoPaymentGateway.php:180
+#: src/core/Gateways/BoletoPaymentGateway.php:184
+#: src/core/Gateways/CheckoutPaymentGateway.php:188
+#: src/core/Gateways/CheckoutPaymentGateway.php:192
 #: src/core/Gateways/GooglePayPaymentGateway.php:172
 #: src/core/Gateways/GooglePayPaymentGateway.php:176
-#: src/core/Gateways/PayWithPagBankGateway.php:178
-#: src/core/Gateways/PayWithPagBankGateway.php:182
-#: src/core/Gateways/PixPaymentGateway.php:179
+#: src/core/Gateways/PayWithPagBankGateway.php:179
+#: src/core/Gateways/PayWithPagBankGateway.php:183
+#: src/core/Gateways/PixPaymentGateway.php:180
 #: src/core/Presentation/Blocks/ApplePayBlocksSupport.php:123
 #: src/core/Presentation/Blocks/GooglePayBlocksSupport.php:123
 msgid "Houve um erro ao processar o pagamento. Tente novamente."
@@ -252,39 +252,39 @@ msgid "Pagamento recusado."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:233
-#: src/core/Gateways/BoletoPaymentGateway.php:228
-#: src/core/Gateways/CheckoutPaymentGateway.php:273
+#: src/core/Gateways/BoletoPaymentGateway.php:229
+#: src/core/Gateways/CheckoutPaymentGateway.php:274
 #: src/core/Gateways/CreditCardPaymentGateway.php:1277
 #: src/core/Gateways/GooglePayPaymentGateway.php:233
-#: src/core/Gateways/PayWithPagBankGateway.php:229
-#: src/core/Gateways/PixPaymentGateway.php:263
+#: src/core/Gateways/PayWithPagBankGateway.php:230
+#: src/core/Gateways/PixPaymentGateway.php:264
 msgid "Houve um erro desconhecido ao tentar realizar o reembolso."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:307
-#: src/core/Gateways/BoletoPaymentGateway.php:347
-#: src/core/Gateways/CheckoutPaymentGateway.php:338
+#: src/core/Gateways/BoletoPaymentGateway.php:348
+#: src/core/Gateways/CheckoutPaymentGateway.php:339
 #: src/core/Gateways/CreditCardPaymentGateway.php:1324
-#: src/core/Gateways/PayWithPagBankGateway.php:362
-#: src/core/Gateways/PixPaymentGateway.php:427
+#: src/core/Gateways/PayWithPagBankGateway.php:363
+#: src/core/Gateways/PixPaymentGateway.php:428
 msgid "- O método de pagamento está desabilitado."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:311
-#: src/core/Gateways/BoletoPaymentGateway.php:351
-#: src/core/Gateways/CheckoutPaymentGateway.php:342
+#: src/core/Gateways/BoletoPaymentGateway.php:352
+#: src/core/Gateways/CheckoutPaymentGateway.php:343
 #: src/core/Gateways/CreditCardPaymentGateway.php:1328
-#: src/core/Gateways/PayWithPagBankGateway.php:366
-#: src/core/Gateways/PixPaymentGateway.php:431
+#: src/core/Gateways/PayWithPagBankGateway.php:367
+#: src/core/Gateways/PixPaymentGateway.php:432
 msgid "- A sua conta PagBank não está conectada."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:315
-#: src/core/Gateways/BoletoPaymentGateway.php:355
-#: src/core/Gateways/CheckoutPaymentGateway.php:346
+#: src/core/Gateways/BoletoPaymentGateway.php:356
+#: src/core/Gateways/CheckoutPaymentGateway.php:347
 #: src/core/Gateways/CreditCardPaymentGateway.php:1332
-#: src/core/Gateways/PayWithPagBankGateway.php:370
-#: src/core/Gateways/PixPaymentGateway.php:435
+#: src/core/Gateways/PayWithPagBankGateway.php:371
+#: src/core/Gateways/PixPaymentGateway.php:436
 msgid "- A moeda da loja não é BRL."
 msgstr ""
 
@@ -293,85 +293,85 @@ msgid "- A loja precisa usar HTTPS (SSL) para aceitar pagamentos via Apple Pay."
 msgstr ""
 
 #: src/core/Gateways/ApplePayPaymentGateway.php:323
-#: src/core/Gateways/BoletoPaymentGateway.php:359
-#: src/core/Gateways/CheckoutPaymentGateway.php:350
+#: src/core/Gateways/BoletoPaymentGateway.php:360
+#: src/core/Gateways/CheckoutPaymentGateway.php:351
 #: src/core/Gateways/CreditCardPaymentGateway.php:1336
 #: src/core/Gateways/GooglePayPaymentGateway.php:323
-#: src/core/Gateways/PayWithPagBankGateway.php:374
-#: src/core/Gateways/PixPaymentGateway.php:439
+#: src/core/Gateways/PayWithPagBankGateway.php:375
+#: src/core/Gateways/PixPaymentGateway.php:440
 msgid "Alguns errors podem estar impedindo o método de pagamento de ser exibido durante o checkout:"
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:58
+#: src/core/Gateways/BoletoPaymentGateway.php:59
 msgid "PagBank Boleto"
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:60
+#: src/core/Gateways/BoletoPaymentGateway.php:61
 msgid "Aceite pagamentos via boleto bancário com vencimento configurável. O boleto e o código de barras escaneável ficam disponíveis na página do pedido e no e-mail do cliente. Inclui confirmação automática via webhook e reembolso online total ou parcial."
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:93
+#: src/core/Gateways/BoletoPaymentGateway.php:94
 msgid "Habilitar boleto"
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:116
+#: src/core/Gateways/BoletoPaymentGateway.php:117
 #: src/core/Presentation/Blocks/BoletoBlocksSupport.php:100
 #: dist/admin/gateway-settings.js:1
 msgid "Boleto"
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:123
+#: src/core/Gateways/BoletoPaymentGateway.php:124
 #: src/core/Presentation/Blocks/BoletoBlocksSupport.php:101
 msgid "O boleto será gerado assim que você finalizar o pedido."
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:127
+#: src/core/Gateways/BoletoPaymentGateway.php:128
 #: dist/admin/gateway-settings.js:1
 msgid "Dias para vencimento"
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:129
+#: src/core/Gateways/BoletoPaymentGateway.php:130
 msgid "Isso irá controlar quantos dias após gerar o boleto ele irá vencer."
 msgstr ""
 
-#: src/core/Gateways/BoletoPaymentGateway.php:191
+#: src/core/Gateways/BoletoPaymentGateway.php:192
 msgid "Waiting Boleto payment."
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:65
-#: src/core/Gateways/CheckoutPaymentGateway.php:121
+#: src/core/Gateways/CheckoutPaymentGateway.php:66
+#: src/core/Gateways/CheckoutPaymentGateway.php:122
 #: src/core/Presentation/Blocks/CheckoutBlocksSupport.php:100
 #: dist/admin/gateway-settings.js:1
 msgid "Checkout PagBank"
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:67
+#: src/core/Gateways/CheckoutPaymentGateway.php:68
 msgid "Opção \"tudo em um\": o cliente é redirecionado para uma página única de pagamento do PagBank que aceita cartão de crédito, Pix, boleto e saldo PagBank. Tempo de expiração configurável, confirmação automática via webhook e reembolso online total ou parcial."
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:98
+#: src/core/Gateways/CheckoutPaymentGateway.php:99
 msgid "Habilitar Checkout PagBank"
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:128
+#: src/core/Gateways/CheckoutPaymentGateway.php:129
 #: src/core/Presentation/Blocks/CheckoutBlocksSupport.php:101
 msgid "Você será redirecionado para o PagBank para finalizar o pagamento."
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:132
+#: src/core/Gateways/CheckoutPaymentGateway.php:133
 msgid "Tempo de expiração (minutos)"
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:134
+#: src/core/Gateways/CheckoutPaymentGateway.php:135
 msgid "Tempo em minutos para o checkout expirar. Padrão: 120 (2 horas)."
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:199
+#: src/core/Gateways/CheckoutPaymentGateway.php:200
 msgid "Aguardando pagamento via Checkout PagBank."
 msgstr ""
 
-#: src/core/Gateways/CheckoutPaymentGateway.php:205
-#: src/core/Gateways/CheckoutPaymentGateway.php:209
+#: src/core/Gateways/CheckoutPaymentGateway.php:206
+#: src/core/Gateways/CheckoutPaymentGateway.php:210
 msgid "Não foi possível obter a URL de checkout. Tente novamente."
 msgstr ""
 
@@ -561,7 +561,7 @@ msgstr ""
 
 #. translators: %1$d: number of installments, %2$s: installment value.
 #: src/core/Gateways/CreditCardPaymentGateway.php:500
-#: src/core/Presentation/ApiHelpers.php:1013
+#: src/core/Presentation/ApiHelpers.php:1045
 #: dist/public/blocks/checkout-credit-card.js:3
 #, php-format,js-format
 msgid "%1$dx de %2$s sem juros"
@@ -668,21 +668,21 @@ msgstr ""
 
 #: src/core/Gateways/CreditCardPaymentGateway.php:1105
 #: src/core/Gateways/CreditCardPaymentGateway.php:1398
-#: src/core/Presentation/WebhookHandler.php:385
+#: src/core/Presentation/WebhookHandler.php:387
 msgid "O PagBank está analisando a transação."
 msgstr ""
 
 #: src/core/Gateways/CreditCardPaymentGateway.php:1107
 #: src/core/Gateways/CreditCardPaymentGateway.php:1111
 #: src/core/Gateways/CreditCardPaymentGateway.php:1400
-#: src/core/Gateways/PixPaymentGateway.php:221
-#: src/core/Presentation/WebhookHandler.php:391
+#: src/core/Gateways/PixPaymentGateway.php:222
+#: src/core/Presentation/WebhookHandler.php:393
 msgid "O pagamento foi recusado."
 msgstr ""
 
 #: src/core/Gateways/CreditCardPaymentGateway.php:1114
 #: src/core/Gateways/CreditCardPaymentGateway.php:1118
-#: src/core/Gateways/CreditCardPaymentGateway.php:1403
+#: src/core/Gateways/CreditCardPaymentGateway.php:1402
 msgid "Houve um erro no pagamento. Por favor, entre em contato com o suporte."
 msgstr ""
 
@@ -690,6 +690,12 @@ msgstr ""
 #: src/core/Gateways/CreditCardPaymentGateway.php:1144
 #, php-format
 msgid "<b>Cobrança:</b> %1$s.<br><b>Parcelas:</b> %2$d.<br><b>Bandeira do cartão:</b> %3$s.<br><b>Últimos 4 dígitos do cartão:</b> %4$s.<br><a href=\"%5$s\" target=\"_blank\" rel=\"noreferrer\">Visualizar pagamento no PagBank</a>"
+msgstr ""
+
+#. translators: %s: error message.
+#: src/core/Gateways/CreditCardPaymentGateway.php:1415
+#, php-format
+msgid "Falha na renovação via PagBank: %s"
 msgstr ""
 
 #: src/core/Gateways/DebitCardPaymentGateway.php:29
@@ -755,69 +761,69 @@ msgstr ""
 msgid "A loja precisa usar HTTPS (SSL) para aceitar pagamentos via Google Pay."
 msgstr ""
 
-#: src/core/Gateways/PayWithPagBankGateway.php:58
-#: src/core/Gateways/PayWithPagBankGateway.php:116
+#: src/core/Gateways/PayWithPagBankGateway.php:59
+#: src/core/Gateways/PayWithPagBankGateway.php:117
 #: src/core/Presentation/Blocks/PayWithPagBankBlocksSupport.php:100
 msgid "Pagar com PagBank"
 msgstr ""
 
-#: src/core/Gateways/PayWithPagBankGateway.php:60
+#: src/core/Gateways/PayWithPagBankGateway.php:61
 msgid "Aceite pagamentos através da carteira digital PagBank. O cliente é redirecionado para concluir a compra usando saldo da conta ou cartão de crédito pelo app PagBank, com fluxo otimizado para celular. Inclui confirmação automática via webhook e reembolso online total ou parcial."
 msgstr ""
 
-#: src/core/Gateways/PayWithPagBankGateway.php:93
+#: src/core/Gateways/PayWithPagBankGateway.php:94
 msgid "Habilitar Pagar com PagBank"
 msgstr ""
 
-#: src/core/Gateways/PayWithPagBankGateway.php:123
+#: src/core/Gateways/PayWithPagBankGateway.php:124
 msgid "Pague usando sua conta PagBank ou cartão de crédito pelo app."
 msgstr ""
 
-#: src/core/Gateways/PayWithPagBankGateway.php:190
+#: src/core/Gateways/PayWithPagBankGateway.php:191
 msgid "Aguardando pagamento via PagBank."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:59
+#: src/core/Gateways/PixPaymentGateway.php:60
 msgid "PagBank Pix"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:61
+#: src/core/Gateways/PixPaymentGateway.php:62
 msgid "Aceite pagamentos via Pix com QR code e código copia e cola exibidos na página do pedido e no e-mail do cliente. Tempo de expiração configurável, confirmação automática via webhook e reembolso online total ou parcial. É necessário ter uma chave Pix cadastrada na sua conta PagBank."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:94
+#: src/core/Gateways/PixPaymentGateway.php:95
 msgid "Habilitar Pix"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:117
+#: src/core/Gateways/PixPaymentGateway.php:118
 #: src/core/Presentation/Blocks/PixBlocksSupport.php:100
 #: dist/admin/gateway-settings.js:1
 msgid "Pix"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:124
+#: src/core/Gateways/PixPaymentGateway.php:125
 #: src/core/Presentation/Blocks/PixBlocksSupport.php:101
 msgid "O código Pix será gerado assim que você finalizar o pedido."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:128
+#: src/core/Gateways/PixPaymentGateway.php:129
 msgid "Expiração em minutos"
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:130
+#: src/core/Gateways/PixPaymentGateway.php:131
 msgid "Isso irá controlar o tempo em minutos que o Pix será válido."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:197
+#: src/core/Gateways/PixPaymentGateway.php:198
 msgid "Não foi possível gerar o Pix. Tente novamente."
 msgstr ""
 
-#: src/core/Gateways/PixPaymentGateway.php:210
+#: src/core/Gateways/PixPaymentGateway.php:211
 msgid "Aguardando pagamento do Pix."
 msgstr ""
 
 #. translators: %1$s: response code, %2$s: response message.
-#: src/core/Gateways/PixPaymentGateway.php:329
+#: src/core/Gateways/PixPaymentGateway.php:330
 #, php-format
 msgid "Análise de risco do Pix: %1$s - %2$s"
 msgstr ""
@@ -935,40 +941,40 @@ msgid "O ID da aplicação é inválido."
 msgstr ""
 
 #. translators: %1$s: order id, %2$s: blog name.
-#: src/core/Presentation/ApiHelpers.php:403
-#: src/core/Presentation/ApiHelpers.php:625
-#: src/core/Presentation/ApiHelpers.php:673
-#: src/core/Presentation/ApiHelpers.php:715
-#: src/core/Presentation/ApiHelpers.php:804
-#: src/core/Presentation/ApiHelpers.php:961
+#: src/core/Presentation/ApiHelpers.php:435
+#: src/core/Presentation/ApiHelpers.php:657
+#: src/core/Presentation/ApiHelpers.php:705
+#: src/core/Presentation/ApiHelpers.php:747
+#: src/core/Presentation/ApiHelpers.php:836
+#: src/core/Presentation/ApiHelpers.php:993
 #, php-format
 msgid "Pedido %1$s - %2$s"
 msgstr ""
 
 #. translators: %s: blog name.
-#: src/core/Presentation/ApiHelpers.php:633
+#: src/core/Presentation/ApiHelpers.php:665
 #, php-format
 msgid "Pagamento para %s"
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:835
+#: src/core/Presentation/ApiHelpers.php:867
 msgid "O cartão criptografado é inválido. Por favor, contate o suporte."
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:854
+#: src/core/Presentation/ApiHelpers.php:886
 msgid "O token de pagamento não foi encontrado."
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:930
+#: src/core/Presentation/ApiHelpers.php:962
 msgid "Assinatura"
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:1035
+#: src/core/Presentation/ApiHelpers.php:1067
 msgid "O valor para reembolso deve ser maior que zero"
 msgstr ""
 
-#: src/core/Presentation/ApiHelpers.php:1051
-#: src/core/Presentation/ApiHelpers.php:1053
+#: src/core/Presentation/ApiHelpers.php:1083
+#: src/core/Presentation/ApiHelpers.php:1085
 msgid "Houve um erro ao tentar realizar o reembolso."
 msgstr ""
 
@@ -1113,7 +1119,7 @@ msgstr ""
 msgid "Método de pagamento inválido."
 msgstr ""
 
-#: src/core/Presentation/PaymentGateways.php:158
+#: src/core/Presentation/PaymentGateways.php:186
 msgid "Oficial PagBank"
 msgstr ""
 
@@ -1147,17 +1153,17 @@ msgstr ""
 msgid "Cobrança divergente."
 msgstr ""
 
-#: src/core/Presentation/WebhookHandler.php:365
+#: src/core/Presentation/WebhookHandler.php:367
 msgid "Falha ao verificar a cobrança na API do PagBank. Tente novamente mais tarde."
 msgstr ""
 
 #. translators: 1: charge status from API, 2: charge ID.
-#: src/core/Presentation/WebhookHandler.php:377
+#: src/core/Presentation/WebhookHandler.php:379
 #, php-format
 msgid "Webhook PagBank recebido. Status verificado via API: %1$s. Cobrança: %2$s."
 msgstr ""
 
-#: src/core/Presentation/WebhookHandler.php:403
+#: src/core/Presentation/WebhookHandler.php:405
 msgid "O pagamento foi cancelado."
 msgstr ""
 
