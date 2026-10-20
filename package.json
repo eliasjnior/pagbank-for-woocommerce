@@ -26,7 +26,9 @@
 		"check:version": "npx tsx scripts/check-version.ts",
 		"todos": "leasot 'src/**/*.{php,ts,js}'",
 		"make:pot": "./scripts/make-pot.sh",
-		"wp": "docker compose run --rm wordpress-cli wp"
+		"wp": "docker compose exec -u www-data wordpress wp",
+		"pagbank:save-credentials": "npx tsx scripts/pagbank-credentials.ts",
+		"worktree:env": "npx tsx scripts/worktree-env.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",

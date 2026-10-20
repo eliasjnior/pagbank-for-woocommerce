@@ -17,14 +17,17 @@ PagBank for WooCommerce is a WordPress plugin that integrates PagBank payment ga
 
 ### Setup
 ```bash
-# Initial project setup (after docker compose up)
+# Full, idempotent setup: dependencies, Docker stack, build, WordPress, store and PagBank connection
 pnpm run setup  # `pnpm setup` is a built-in pnpm command
 
 # Install PHP dependencies
 pnpm composer install
 
 # Start Docker environment
-docker compose up
+docker compose up -d --wait
+
+# Save the PagBank connection of the current site to the main checkout's .env for future setups
+pnpm pagbank:save-credentials
 ```
 
 Access the development site at http://wordpress.localhost (`wordpress` / `wordpress`); the setup installs WordPress under that URL.
@@ -33,6 +36,10 @@ Access the development site at http://wordpress.localhost (`wordpress` / `wordpr
 - WordPress: http://wordpress.localhost
 - PHPMyAdmin: http://localhost:8080
 - Mailpit (Email testing): http://localhost:8025
+
+**Worktrees:** those URLs belong to the main checkout. A worktree runs its own stack (Compose project, `wp/`, database volume) on the ports `pnpm worktree:env` reserved in its `.env`: read `WP_URL`, `PHPMYADMIN_PORT` and `MAILPIT_PORT` from there, never assume port 80, and only run `docker compose` from the worktree's own directory so you don't stop or reset another one's stack. `pnpm run setup` writes the `.env` itself; run `pnpm worktree:env` before `docker compose up` if you start the stack first.
+
+A worktree's stack never starts on its own (`wt switch --create` only copies the dependencies and reserves the ports). Start it only when the task needs WordPress: `pnpm run setup` the first time, which ends with `Setup complete: <url>`, and `docker compose up -d --wait` after that. Run `docker compose stop` when you are done, so stacks don't pile up. Unit tests, linting and builds need no stack. PHP notices and errors land in `logs/debug.log`, and e-mails in Mailpit.
 
 ### Build & Development
 ```bash
@@ -289,8 +296,9 @@ When either plugin provides a field group, the native fields for that group are 
 
 ## Development Environment Details
 
-- WordPress runs on PHP 8.3 with Xdebug automatically installed
-- Database: MariaDB
-- PHPMyAdmin available on port 8080
+- WordPress runs on PHP 8.3 from the image in `docker/wordpress/` (WP-CLI and msmtp, no Xdebug); `pnpm wp` runs WP-CLI inside it as `www-data`
+- Development mode: `WP_ENVIRONMENT_TYPE=development`, `WP_DEBUG`, `WP_DEBUG_DISPLAY` and `SCRIPT_DEBUG` on, `WP_DEBUG_LOG` at `logs/debug.log`
+- Database: MariaDB; PHPMyAdmin on port 8080 (or `PHPMYADMIN_PORT` in a worktree)
 - Plugin mounted as volume for hot-reload
-- Custom PHP settings in `wordpress.ini`
+- PHP settings in `docker/wordpress/php.ini`; Apache vhosts in `docker/wordpress/apache.conf` and `apache-ports.conf`, which listen inside the container on the published ports so loopback requests to `WP_URL` work
+- `mail()` goes to Mailpit; the WP-CLI download cache in `~/.wp-cli/cache` is shared by every worktree

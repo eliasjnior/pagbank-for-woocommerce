@@ -29,19 +29,50 @@ Development also needs Docker, Node 24 and pnpm (the version is pinned in `packa
 
 ```bash
 pnpm install
-docker compose up -d
 pnpm run setup
 ```
 
-`pnpm run setup` installs the dependencies, builds the assets, installs WordPress with WooCommerce and Storefront, and activates the plugin. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
+`pnpm run setup` installs the dependencies, starts the Docker stack, builds the assets and installs WordPress with WooCommerce and Storefront as a Brazilian store in BRL with the plugin active: WooCommerce's sample products, the shop as the home page, the Blocks checkout at `/checkout/` and the shortcode one at `/legacy-checkout/`, both without a sidebar. Brazilian Market and LinkNacional's Brazilian checkout fields plugins are installed but inactive, so the plugin's own fields are the ones in use; activate one to test the interop. The site runs in development mode: `WP_DEBUG` and `SCRIPT_DEBUG` on, errors shown and logged to `logs/debug.log`. The setup is safe to run again. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
 
 | Service | URL |
 | --- | --- |
 | WordPress | http://wordpress.localhost (user `wordpress`, password `wordpress`) |
 | phpMyAdmin | http://localhost:8080 |
-| Mailpit | http://localhost:8025 |
+| Mailpit | http://localhost:8025 (every e-mail the site sends) |
 
-The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`.
+The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`. The WordPress image is built from `docker/wordpress/`, with WP-CLI inside it and no Xdebug.
+
+### PagBank connection
+
+Connect the plugin to PagBank once on the main checkout, then save the connection to its `.env` (gitignored):
+
+```bash
+pnpm pagbank:save-credentials
+```
+
+Every setup, in any worktree, loads the sandbox and production connections from there, so no worktree needs a new OAuth. A new site starts with every PagBank gateway enabled on sandbox, even when production is connected too. Run the command again whenever you reconnect.
+
+### Parallel worktrees
+
+Each git worktree runs its own stack, with its own WordPress in `wp/`, database volume and ports, so several branches (or several AI agents) work at once without touching each other. `pnpm worktree:env`, which the setup runs first, reserves a free slot of host ports and writes them to the worktree's `.env`. WordPress is then served at `http://wordpress-<worktree>.localhost:<port>`; phpMyAdmin and Mailpit are on `localhost` at the ports in `.env`. The main checkout reserves nothing and keeps the URLs above.
+
+A worktree's stack only runs when you start it, so idle worktrees cost nothing:
+
+```bash
+pnpm run setup        # first time: installs and configures the site, then leaves the stack running
+docker compose stop   # done for now
+docker compose up -d  # back to work, same ports and data
+```
+
+With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` prepares each worktree:
+
+- `wt switch --create feat/my-branch` copies `node_modules/`, `vendor/` and `certs/` from the main checkout (`.worktreeinclude`) and reserves the ports; it starts nothing
+- `wt list` shows each worktree's WordPress URL in its `url` column, dimmed while the stack is stopped
+- `wt remove` stops the stack and deletes its database volume
+
+Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install` in the new worktree; `pnpm run setup` reserves the ports itself.
+
+Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot.
 
 ## Commands
 
