@@ -240,7 +240,7 @@ that proves the contract is loose.
 
 - PHPCS (errors fail, warnings are annotated), PHPStan, PHPUnit on PHP 7.4–8.3, Biome, `tsc`
 - commitlint on every commit and on the PR title, which becomes the squash commit on `main`; commit body lines are limited to 100 characters
-- Branch name: pull requests into a `vX.Y.Z` release branch must come from `<type>/<name>` (Conventional Commits types, lowercase) or `renovate/...`, and pull requests into `main` only from a `vX.Y.Z` branch. Name new branches that way
+- Branch name: pull requests into a `vX.Y.Z` release branch must come from `<type>/<name>` (Conventional Commits types, lowercase) or `renovate/...`, and pull requests into `main` only from a `vX.Y.Z` branch. Name new branches that way; a layer of a stack must be typed too, since its base is the typed branch below it
 - Package: `check:version`, a production build, the `.pot` compared with a fresh `make-pot` (source references ignored, so only string changes matter), then the zip and its verification
 - Plugin Check on the zip. It also scans `src/templates/`, which `.phpcs.xml` leaves out
 - Smoke test on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and the latest one
@@ -250,6 +250,8 @@ What this means when changing code:
 - Changing a translatable string requires `pnpm make:pot` and committing the `.pot`
 - A new gateway needs its id in `GATEWAYS` in `scripts/smoke-test.sh`; a new enqueued asset must be produced by the build
 - Do not bump versions by hand; `pnpm bump` also fixes the `composer.lock` content-hash, which depends on the `composer.json` version
+
+Stacked pull requests: split a large change with `gh stack init --base vX.Y.Z feat/a`, then `gh stack add feat/b` for each layer; `gh stack init` otherwise bases the stack on `main`. Each layer is a typed branch whose PR targets the one below it, and every PR is held to the release branch's rules (`CI result`), with CI running on its own diff. Keep a stack's branches in one worktree, since git refuses to check out a branch another worktree holds, and `gh stack rebase`/`sync` switch between them. Merging a PR also merges every unmerged PR below it, bottom-up, and GitHub retargets the next one to `vX.Y.Z`; auto-merge does not work on stacks.
 
 Releases: create `vX.Y.Z` from `main`, bump and write the `readme.txt` changelog entry on a `chore/` branch merged into it, merge `vX.Y.Z` into `main`, then run the **Release** workflow from `main`. It tags `X.Y.Z` (no `v`, matching the WordPress.org SVN tags and avoiding clashes with release branches) and publishes the zip with a build provenance attestation and the changelog entry as notes.
 

@@ -144,6 +144,17 @@ Branches follow the release flow, enforced by the **Branch name** job:
 - Work happens on `<type>/<name>` branches (`feat/pix-refunds`, `fix/boleto-email`, with the Conventional Commits types) and is merged into a `vX.Y.Z` release branch. Renovate also targets the release branches.
 - Only a `vX.Y.Z` branch is merged into `main`.
 
+A large change can go up as a [stack of pull requests](https://docs.github.com/en/pull-requests/get-started/stacked-prs-quickstart), each one reviewed on its own diff. With the [`gh stack`](https://github.com/github/gh-stack) extension (`gh extension install github/gh-stack`), base the stack on the release branch, since it defaults to `main`:
+
+```bash
+gh stack init --base vX.Y.Z feat/pix-refunds-api   # bottom layer, targets vX.Y.Z
+gh stack add feat/pix-refunds-ui                    # targets feat/pix-refunds-api
+gh stack submit                                     # push and open the stacked PRs
+gh stack sync                                       # after a merge: rebase what is left
+```
+
+Every layer is a `<type>/<name>` branch and must pass **CI result**, as on the release branch. Merging a pull request also merges the ones below it, and GitHub then retargets the next one to the release branch. Keep a stack in one worktree, because `gh stack` switches between its branches.
+
 `main` and the `vX.Y.Z` branches are protected: no direct pushes or force pushes, and every pull request needs the CI checks to pass.
 
 ## License
