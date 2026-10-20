@@ -5065,7 +5065,7 @@ packages:
     engines: {node: '>= 0.4'}
 
   woocommerce-monorepo@https://codeload.github.com/woocommerce/woocommerce/tar.gz/3bc97a1c649b35a2bb2b550a446329eaca3e7e0c:
-    resolution: {tarball: https://codeload.github.com/woocommerce/woocommerce/tar.gz/3bc97a1c649b35a2bb2b550a446329eaca3e7e0c}
+    resolution: {gitHosted: true, tarball: https://codeload.github.com/woocommerce/woocommerce/tar.gz/3bc97a1c649b35a2bb2b550a446329eaca3e7e0c}
     version: 0.0.0
     engines: {node: ^20.11.1}
 
