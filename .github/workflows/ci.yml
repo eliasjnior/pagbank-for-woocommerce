@@ -113,7 +113,7 @@ jobs:
       - name: Check translation template is up to date
         run: |
           pot=languages/pagbank-for-woocommerce.pot
-          wp i18n make-pot . "$RUNNER_TEMP/fresh.pot" --exclude=vendor,wp --domain=pagbank-for-woocommerce --allow-root
+          wp i18n make-pot . "$RUNNER_TEMP/fresh.pot" --exclude=vendor,wp --slug=pagbank-for-woocommerce --domain=pagbank-for-woocommerce --allow-root
           strip_volatile() { grep -vE '^(#: |# Copyright|"POT-Creation-Date: |"X-Generator: )' "$1"; }
           if ! diff -u <(strip_volatile "$pot") <(strip_volatile "$RUNNER_TEMP/fresh.pot"); then
             echo "::error file=$pot::Translation template is outdated. Run pnpm make:pot and commit the result."
