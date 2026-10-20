@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PagBank for WooCommerce is a WordPress plugin that integrates PagBank payment gateway with WooCommerce, supporting credit card, Pix, and boleto (bank slip) payment methods. The plugin is designed for Brazilian e-commerce with marketplace support (Dokan and WCFM) and includes split payment functionality.
+PagBank for WooCommerce is a WordPress plugin that integrates PagBank payment gateway with WooCommerce, supporting credit card, debit card, Pix, boleto (bank slip), Pay with PagBank and Checkout PagBank, plus Google Pay and Apple Pay behind the `PAGBANK_FEATURE_FLAG_GOOGLE_PAY_ENABLED` / `PAGBANK_FEATURE_FLAG_APPLE_PAY_ENABLED` constants. The plugin is designed for Brazilian e-commerce with marketplace support (Dokan and WCFM) and includes split payment functionality.
 
 ## Technology Stack
 
@@ -27,10 +27,10 @@ pnpm composer install
 docker compose up
 ```
 
-Access the development site at http://localhost
+Access the development site at http://wordpress.localhost (`wordpress` / `wordpress`); the setup installs WordPress under that URL.
 
 **Development Services:**
-- WordPress: http://localhost
+- WordPress: http://wordpress.localhost
 - PHPMyAdmin: http://localhost:8080
 - Mailpit (Email testing): http://localhost:8025
 
@@ -44,6 +44,21 @@ pnpm dev
 
 # TypeScript compilation only
 tsc
+
+# Production zip into build/, verified by scripts/verify-export.ts
+pnpm export
+```
+
+### Versioning & Translations
+```bash
+# Set a new version in every declaration and open its changelog entry
+pnpm bump <major|minor|patch|X.Y.Z>
+
+# Check that every version declaration matches package.json
+pnpm check:version
+
+# Regenerate languages/pagbank-for-woocommerce.pot (needs a production build in dist/)
+pnpm make:pot
 ```
 
 ### Linting
@@ -57,8 +72,11 @@ pnpm lint:core
 # Fix PHP code style issues
 pnpm lint:fix:core
 
-# Lint TypeScript/JavaScript only
+# Lint TypeScript/JavaScript only (Biome)
 pnpm lint:ui
+
+# Static analysis (PHPStan, baseline in phpstan-baseline.neon)
+pnpm analyse
 ```
 
 ### Testing
@@ -83,37 +101,33 @@ pnpm wp <command>
 ```
 src/
 ├── core/                          # PHP backend code
-│   ├── Gateways/                  # Payment gateway implementations
-│   │   ├── CreditCardPaymentGateway.php
-│   │   ├── PixPaymentGateway.php
-│   │   └── BoletoPaymentGateway.php
-│   ├── Presentation/              # WP hooks, AJAX handlers, field rendering
-│   │   ├── PaymentGateways.php    # Gateway registration
-│   │   ├── PaymentGatewaysFields.php
+│   ├── Gateways/                  # One class per payment method, shared traits in Traits/
+│   ├── Presentation/              # WP hooks, REST/AJAX handlers, checkout fields, API client
+│   │   ├── PaymentGateways.php    # Gateway registration and shared script enqueues
 │   │   ├── Connect.php            # PagBank OAuth connection
-│   │   ├── ConnectAjaxApi.php
-│   │   ├── WebhookHandler.php
 │   │   ├── Api.php                # PagBank API client
-│   │   ├── ApiHelpers.php
-│   │   └── Helpers.php
-│   └── Marketplace/               # Marketplace integrations
-│       └── WcfmIntegration.php
-├── templates/                     # PHP template files for checkout/admin
-└── ui/                           # TypeScript frontend code
-    └── entries/
-        ├── admin/
-        │   └── admin-settings.ts  # Admin settings page scripts
-        └── public/
-            ├── checkout-credit-card.ts
-            └── order.ts
+│   │   ├── ApiHelpers.php         # Order → API payload builders
+│   │   ├── WebhookHandler.php
+│   │   ├── LegacyCheckoutFields.php
+│   │   └── Blocks/                # Checkout Blocks payment methods and fields
+│   ├── Validators/                # CPF, CNPJ and alphanumeric CNPJ validation
+│   └── Marketplace/               # WCFM integration
+├── templates/                     # PHP templates for checkout, orders and e-mails
+└── ui/                            # TypeScript/React frontend code
+    ├── entries/                   # One Vite entry per enqueued script (admin/, public/blocks, public/legacy, ...)
+    ├── shared/                    # Code shared between entries
+    └── styles/                    # SCSS, compiled one file per stylesheet; _partials are only @use'd
 ```
 
 ### Key Architecture Patterns
 
-1. **Payment Gateway Structure**: Three gateway classes extend `WC_Payment_Gateway_CC` or `WC_Payment_Gateway`:
+1. **Payment Gateway Structure**: Each payment method is a class in `src/core/Gateways/` extending `WC_Payment_Gateway_CC` or `WC_Payment_Gateway`, registered in `PaymentGateways::add_gateways()`:
    - `CreditCardPaymentGateway`: Supports tokenization, installments, recurring payments
+   - `DebitCardPaymentGateway`: Extends the credit card gateway, with 3DS authentication
+   - `GooglePayPaymentGateway`, `ApplePayPaymentGateway`: Wallet payments
    - `PixPaymentGateway`: Generates QR codes for instant payment
    - `BoletoPaymentGateway`: Generates bank slips
+   - `PayWithPagBankGateway`, `CheckoutPaymentGateway`: redirect to PagBank
 
 2. **Singleton Pattern**: Presentation layer classes use `get_instance()` static method for initialization
 
@@ -121,7 +135,7 @@ src/
 
 4. **Webhook Processing**: `WebhookHandler.php` processes payment status updates from PagBank
 
-5. **Frontend Build**: Vite bundles TypeScript into separate entry points for admin and public checkout pages
+5. **Frontend Build**: `scripts/build-ui.ts` builds every entry listed in `scripts/helpers/vite-config.ts` as its own IIFE in `dist/`, with WordPress/WooCommerce packages mapped to their globals (`externals`) instead of bundled
 
 6. **Marketplace Split Payments**: Each vendor must configure their PagBank marketplace identifier in their store settings
 
@@ -183,10 +197,8 @@ Everywhere else the types stay. Hooks whose only caller is core passing a fixed 
 that proves the contract is loose.
 
 ### TypeScript/JavaScript
-- ESLint with TypeScript plugin
-- Prettier for formatting
-- Import ordering enforced (import-helpers plugin)
-- Configuration in `.eslintrc.cjs`
+- Biome for linting, formatting and import ordering (`biome.json`)
+- Strict TypeScript (`tsconfig.json`), checked with `tsc`
 
 ## Important Dependencies
 
@@ -206,14 +218,32 @@ that proves the contract is loose.
 
 - PHPUnit configured in `phpunit.xml` with bootstrap at `tests/bootstrap.php`
 - Tests run inside Docker container via `scripts/phpunit.sh`
-- No existing test suite structure visible; tests directory appears empty
+- Unit tests live in `tests/Validators` and `tests/Presentation`. They run without WordPress: `tests/bootstrap.php` shims the few WordPress/WooCommerce functions and classes the code under test touches, so extend it when a test needs more
+- `scripts/smoke-test.sh` exercises the built plugin on a running wp-env site (see Continuous Integration)
 
 ## Build Output
 
-- Vite outputs to `dist/` directory
-- Three entry points: admin-settings, checkout-credit-card, order
-- Shared chunks in `dist/ui/shared/`
-- Auto-zip plugin creates distribution package
+- Vite outputs to `dist/` (scripts by entry name, `dist/styles/`, `dist/images/`)
+- `scripts/export.ts` zips only `dist/`, `languages/`, `src/core/`, `src/templates/`, `vendor/` (installed with `--no-dev`), `composer.json`, the main plugin file and `readme.txt`, dropping dotfiles and `vendor/bin`
+- `scripts/verify-export.ts` then rejects development files, sources, source maps and dev dependencies, and requires every `dist/...` path the shipped PHP references to exist in the zip
+
+## Continuous Integration & Releases
+
+`.github/workflows/ci.yml` runs on every pull request (and is reused by the release):
+
+- PHPCS (errors fail, warnings are annotated), PHPStan, PHPUnit on PHP 7.4–8.3, Biome, `tsc`
+- commitlint on every commit and on the PR title, which becomes the squash commit on `main`; commit body lines are limited to 100 characters
+- Package: `check:version`, a production build, the `.pot` compared with a fresh `make-pot` (source references ignored, so only string changes matter), then the zip and its verification
+- Plugin Check on the zip. It also scans `src/templates/`, which `.phpcs.xml` leaves out
+- Smoke test on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and the latest one
+
+What this means when changing code:
+
+- Changing a translatable string requires `pnpm make:pot` and committing the `.pot`
+- A new gateway needs its id in `GATEWAYS` in `scripts/smoke-test.sh`; a new enqueued asset must be produced by the build
+- Do not bump versions by hand; `pnpm bump` also fixes the `composer.lock` content-hash, which depends on the `composer.json` version
+
+Releases: bump on a `vX.Y.Z` branch, write the `readme.txt` changelog entry, merge into `main`, then run the **Release** workflow from `main`. It tags `X.Y.Z` (no `v`, matching the WordPress.org SVN tags and avoiding clashes with release branches) and publishes the zip with a build provenance attestation and the changelog entry as notes.
 
 ## WooCommerce Integration Points
 

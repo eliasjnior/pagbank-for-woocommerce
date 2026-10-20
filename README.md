@@ -54,6 +54,7 @@ The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PH
 | `pnpm analyse` | Runs PHPStan |
 | `pnpm test` | Runs PHPUnit (`pnpm test path/to/Test.php` for one file) |
 | `pnpm make:pot` | Regenerates `languages/pagbank-for-woocommerce.pot` |
+| `pnpm bump <major\|minor\|patch\|X.Y.Z>` | Sets the new version everywhere it is declared and opens its changelog entry |
 | `pnpm check:version` | Checks that every version declaration matches `package.json` |
 | `pnpm export` | Builds the production zip into `build/` and verifies its contents |
 | `pnpm wp <command>` | Runs WP-CLI against the development site |
@@ -87,8 +88,8 @@ The zip built for each PR is attached to the workflow run, so it can be installe
 
 ## Releasing
 
-1. On a `vX.Y.Z` branch, bump the version in `package.json`, `composer.json`, the plugin header and `PAGBANK_WOOCOMMERCE_VERSION` in `pagbank-for-woocommerce.php`, the `Stable tag` in `readme.txt` and `phpstan-bootstrap.php`.
-2. Add the changelog entry to `readme.txt` (`= X.Y.Z - YYYY-MM-DD =`) and run `pnpm make:pot`.
+1. On a `vX.Y.Z` branch, run `pnpm bump patch` (or `minor`, `major`, an exact `X.Y.Z`). It updates `package.json`, `composer.json` and the `composer.lock` hash, the plugin header and `PAGBANK_WOOCOMMERCE_VERSION`, `phpstan-bootstrap.php`, the `Stable tag` in `readme.txt` and the `.pot` header, and adds the `= X.Y.Z - YYYY-MM-DD =` changelog heading.
+2. List the changes under that heading in `readme.txt`, and run `pnpm make:pot` if translatable strings changed.
 3. Open a pull request to `main` and merge it once CI passes.
 4. Run the **Release** workflow from `main` (Actions → Release → Run workflow).
 
