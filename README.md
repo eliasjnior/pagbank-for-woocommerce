@@ -54,6 +54,7 @@ The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PH
 | `pnpm analyse` | Runs PHPStan |
 | `pnpm test` | Runs PHPUnit (`pnpm test path/to/Test.php` for one file) |
 | `pnpm make:pot` | Regenerates `languages/pagbank-for-woocommerce.pot` |
+| `pnpm bump <major\|minor\|patch\|X.Y.Z>` | Sets the new version everywhere it is declared and opens its changelog entry |
 | `pnpm check:version` | Checks that every version declaration matches `package.json` |
 | `pnpm export` | Builds the production zip into `build/` and verifies its contents |
 | `pnpm wp <command>` | Runs WP-CLI against the development site |
@@ -81,13 +82,14 @@ Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 - Conventional Commits on every commit and on the PR title (the squash commit on `main`)
 - A package build that checks version consistency, fails when the `.pot` is outdated, and verifies that the zip has every asset the PHP enqueues and nothing from development
 - [Plugin Check](https://wordpress.org/plugins/plugin-check/), the WordPress.org review tool, on the built zip: errors fail the job, warnings are annotated
+- A smoke test that installs the zip with WooCommerce on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and on the latest one, then checks that every gateway registers, the storefront and the gateway settings screens render, and the plugin logs no PHP errors. `scripts/smoke-test.sh` runs the same checks against any local wp-env site
 
 The zip built for each PR is attached to the workflow run, so it can be installed on a test store.
 
 ## Releasing
 
-1. On a `vX.Y.Z` branch, bump the version in `package.json`, `composer.json`, the plugin header and `PAGBANK_WOOCOMMERCE_VERSION` in `pagbank-for-woocommerce.php`, the `Stable tag` in `readme.txt` and `phpstan-bootstrap.php`.
-2. Add the changelog entry to `readme.txt` (`= X.Y.Z - YYYY-MM-DD =`) and run `pnpm make:pot`.
+1. On a `vX.Y.Z` branch, run `pnpm bump patch` (or `minor`, `major`, an exact `X.Y.Z`). It updates `package.json`, `composer.json` and the `composer.lock` hash, the plugin header and `PAGBANK_WOOCOMMERCE_VERSION`, `phpstan-bootstrap.php`, the `Stable tag` in `readme.txt` and the `.pot` header, and adds the `= X.Y.Z - YYYY-MM-DD =` changelog heading.
+2. List the changes under that heading in `readme.txt`, and run `pnpm make:pot` if translatable strings changed.
 3. Open a pull request to `main` and merge it once CI passes.
 4. Run the **Release** workflow from `main` (Actions → Release → Run workflow).
 
