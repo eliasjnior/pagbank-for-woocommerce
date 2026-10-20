@@ -25,7 +25,6 @@
 		"check:version": "npx tsx scripts/check-version.ts",
 		"todos": "leasot 'src/**/*.{php,ts,js}'",
 		"make:pot": "./scripts/make-pot.sh",
-		"generate-md": "wp-readme-to-md --screenshot-url=https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/{screenshot}.png",
 		"wp": "docker compose run --rm wordpress-cli wp"
 	},
 	"devDependencies": {
@@ -47,8 +46,7 @@
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.2.7",
-		"woocommerce-monorepo": "github:woocommerce/woocommerce",
-		"wp-readme-to-markdown": "^1.0.1"
+		"woocommerce-monorepo": "github:woocommerce/woocommerce"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.2",
