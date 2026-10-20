@@ -16,6 +16,7 @@ concurrency:
 jobs:
   # Changes reach a vX.Y.Z release branch from a typed branch (feat/..., fix/...) or Renovate,
   # and only a release branch reaches the default branch. Rulesets on this plan cannot match the source branch.
+  # A stacked PR targets the typed branch below it until GitHub retargets it, so it follows the same rule.
   branch-name:
     name: Branch name
     if: github.event_name == 'pull_request'
@@ -30,7 +31,7 @@ jobs:
           typed='^((feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/[a-z0-9][a-z0-9._-]*|renovate/.+)$'
           if [ "$BASE" = "$DEFAULT_BRANCH" ]; then
             allowed=$release expected="a release branch (vX.Y.Z)"
-          elif [[ $BASE =~ $release ]]; then
+          elif [[ $BASE =~ $release || $BASE =~ $typed ]]; then
             allowed=$typed expected="<type>/<name>, e.g. feat/pix-refunds or fix/boleto-email"
           else
             exit 0
