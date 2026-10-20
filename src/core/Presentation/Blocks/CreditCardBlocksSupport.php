@@ -129,7 +129,9 @@ final class CreditCardBlocksSupport extends AbstractPaymentMethodType {
 		$maximum_installments_interest_free = (int) $this->get_setting( 'maximum_installments_interest_free', 1 );
 
 		// 3DS settings.
-		$threeds_enabled = 'yes' === $this->get_setting( 'threeds_enabled', 'no' );
+		$threeds_enabled           = 'yes' === $this->get_setting( 'threeds_enabled', 'no' );
+		$threeds_allow_unsupported = $threeds_enabled
+			&& 'yes' === $this->get_setting( 'threeds_allow_unsupported', 'no' );
 
 		// Calculate fixed installments plan if transfer of interest is disabled.
 		$installments_plan = array();
@@ -154,6 +156,7 @@ final class CreditCardBlocksSupport extends AbstractPaymentMethodType {
 			'nonce'                              => wp_create_nonce( 'pagbank_get_installments' ),
 			// 3DS settings.
 			'threeds_enabled'                    => $threeds_enabled,
+			'threeds_allow_unsupported'          => $threeds_allow_unsupported,
 			'api_3ds_session_url'                => $this->gateway ? $this->gateway->get_api_3ds_session_url() : '',
 			'threeds_nonce'                      => wp_create_nonce( 'pagbank_get_3ds_session' ),
 			'messages'                           => array(
