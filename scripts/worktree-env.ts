@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { rootDir } from "./helpers/vite-config.ts";
 
 // Each slot owns ten consecutive host ports starting at PORT_BASE + slot * 10.
@@ -116,6 +116,15 @@ const ports = Object.fromEntries(
 const project = basename(rootDir)
 	.toLowerCase()
 	.replace(/[^a-z0-9_-]+/g, "-");
+// A worktree at ../pagbank-for-woocommerce.feat-x is served as wordpress-feat-x.localhost.
+const repo = basename(dirname(git("rev-parse", "--path-format=absolute", "--git-common-dir")));
+const host = `wordpress-${basename(rootDir)
+	.replace(new RegExp(`^${repo}\\.`), "")
+	.toLowerCase()
+	.replace(/[^a-z0-9]+/g, "-")
+	.replace(/^-+|-+$/g, "")
+	.slice(0, 50)}.localhost`;
+const url = `http://${host}:${ports.WP_HTTP_PORT}`;
 
 writeFileSync(
 	envFile,
@@ -124,7 +133,8 @@ writeFileSync(
 		"# once `pnpm run setup` has run.",
 		`WORKTREE_SLOT=${slot}`,
 		`COMPOSE_PROJECT_NAME=${project}`,
-		`WP_URL=http://localhost:${ports.WP_HTTP_PORT}`,
+		`WP_HOST=${host}`,
+		`WP_URL=${url}`,
 		...Object.entries(ports).map(([name, port]) => `${name}=${port}`),
 		"# Set to debug and point .vscode/launch.json at XDEBUG_PORT to step through this worktree.",
 		"XDEBUG_MODE=off",
@@ -132,9 +142,9 @@ writeFileSync(
 	].join("\n"),
 );
 
-recordUrl(`http://localhost:${ports.WP_HTTP_PORT}`);
+recordUrl(url);
 
 console.log(`Reserved slot ${slot} for ${project}:`);
-console.log(`  WordPress   http://localhost:${ports.WP_HTTP_PORT}`);
+console.log(`  WordPress   ${url}`);
 console.log(`  phpMyAdmin  http://localhost:${ports.PHPMYADMIN_PORT}`);
 console.log(`  Mailpit     http://localhost:${ports.MAILPIT_PORT}`);

@@ -51,14 +51,14 @@ Each git worktree runs its own stack, with its own WordPress in `wp/`, database 
 git worktree add ../pagbank-for-woocommerce.my-branch -b feat/my-branch
 cd ../pagbank-for-woocommerce.my-branch
 pnpm install
-pnpm worktree:env   # prints the WordPress, phpMyAdmin and Mailpit URLs
+pnpm worktree:env   # WordPress at http://wordpress-my-branch.localhost:<port>
 docker compose up -d
 pnpm run setup
 ```
 
-The main checkout has no `.env` and keeps the URLs above. Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot. Xdebug is off in worktrees: set `XDEBUG_MODE=debug` in `.env` and use `XDEBUG_PORT` as the port in `.vscode/launch.json`.
+The main checkout has no `.env` and keeps the URLs above; phpMyAdmin and Mailpit of a worktree are on `localhost` at the ports in its `.env`. Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot. Xdebug is off in worktrees: set `XDEBUG_MODE=debug` in `.env` and use `XDEBUG_PORT` as the port in `.vscode/launch.json`.
 
-With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` installs the dependencies and writes `.env` when `wt switch --create` makes the worktree, and `wt remove` stops the stack and deletes its database volume.
+With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` installs the dependencies and writes `.env` when `wt switch --create` makes the worktree, shows each WordPress URL in the `url` column of `wt list`, and `wt remove` stops the stack and deletes its database volume.
 
 ## Commands
 
