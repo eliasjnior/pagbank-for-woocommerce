@@ -4,7 +4,7 @@
 	"author": "Elias Júnior <me@eliasjr.dev>",
 	"license": "GPL-2.0-only",
 	"type": "module",
-	"packageManager": "pnpm@10.17.1",
+	"packageManager": "pnpm@10.34.5",
 	"scripts": {
 		"setup": "./scripts/initial-setup.sh",
 		"composer": "./scripts/composer.sh",
