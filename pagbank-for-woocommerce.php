@@ -7,6 +7,7 @@
  * Author: PagBank
  * Author URI: https://pagseguro.uol.com.br/
  * License: GPL-2.0
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
  * WC requires at least: 9.9
