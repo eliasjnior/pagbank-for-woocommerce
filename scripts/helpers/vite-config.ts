@@ -1,4 +1,4 @@
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BuildOptions } from "vite";
 
@@ -141,6 +141,11 @@ export function getEntryBuildConfig(name: string, entry: string, options: BuildC
 			},
 		} satisfies BuildOptions,
 	};
+}
+
+// Partials only exist to be pulled in with @use; compiled on their own they ship as stray CSS.
+export function isScssPartial(path: string): boolean {
+	return basename(path).startsWith("_");
 }
 
 export function getScssBuildConfig(scssFile: string, options: BuildConfigOptions = {}) {

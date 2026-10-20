@@ -5,6 +5,7 @@ import {
 	entries,
 	getEntryBuildConfig,
 	getScssBuildConfig,
+	isScssPartial,
 	rootDir,
 } from "./helpers/vite-config.ts";
 
@@ -20,7 +21,7 @@ async function buildAll() {
 
 	// Build SCSS files
 	console.log("\nBuilding SCSS styles...");
-	const scssFiles = globSync("src/ui/styles/**/*.scss", { cwd: rootDir });
+	const scssFiles = globSync("src/ui/styles/**/*.scss", { cwd: rootDir, exclude: isScssPartial });
 
 	for (const scssFile of scssFiles) {
 		const relativePath = scssFile.replace("src/ui/styles/", "").replace(".scss", "");
