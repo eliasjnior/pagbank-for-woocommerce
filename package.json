@@ -22,6 +22,7 @@
 		"lint:fix:ui": "biome check --write src scripts",
 		"analyse": "./scripts/phpstan.sh",
 		"test": "./scripts/phpunit.sh",
+		"check:version": "npx tsx scripts/check-version.ts",
 		"todos": "leasot 'src/**/*.{php,ts,js}'",
 		"make:pot": "./scripts/make-pot.sh",
 		"generate-md": "wp-readme-to-md --screenshot-url=https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/{screenshot}.png",

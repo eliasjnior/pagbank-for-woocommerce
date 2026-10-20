@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  phpcs:
+    name: PHP coding standards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+        with:
+          tools: cs2pr
+      # PHPCS skips files whose content and ruleset are unchanged since the cached run.
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/phpcs.cache
+          key: phpcs-${{ hashFiles('.phpcs.xml', 'composer.lock') }}-${{ github.sha }}
+          restore-keys: phpcs-${{ hashFiles('.phpcs.xml', 'composer.lock') }}-
+      # Warnings are annotated on the PR but only errors fail the job.
+      - run: >-
+          vendor/bin/phpcs -q --report=checkstyle --cache="$RUNNER_TEMP/phpcs.cache"
+          --runtime-set ignore_warnings_on_exit 1 | cs2pr --graceful-warnings
+
+  phpstan:
+    name: PHP static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+      # Result cache under PHPStan's default tmpDir (sys_get_temp_dir()/phpstan); it invalidates itself on config changes.
+      - uses: actions/cache@v6
+        with:
+          path: /tmp/phpstan
+          key: phpstan-${{ hashFiles('composer.lock') }}-${{ github.sha }}
+          restore-keys: phpstan-${{ hashFiles('composer.lock') }}-
+      - run: php -d memory_limit=2G vendor/bin/phpstan analyse --no-progress --error-format=github
+
+  phpunit:
+    name: PHP tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every version the plugin header and composer.json accept.
+        php: ["7.4", "8.0", "8.1", "8.2", "8.3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+        with:
+          php-version: ${{ matrix.php }}
+      - run: vendor/bin/phpunit
+
+  ui:
+    name: UI lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-node
+      - run: pnpm exec biome ci src scripts
+      - run: pnpm exec tsc
+
+  commits:
+    name: Conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node
+      - name: Lint commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+      # A squash merge turns the PR title into the commit message on main.
+      - name: Lint pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | pnpm exec commitlint --verbose
+
+  package:
+    name: Plugin package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+        with:
+          composer-options: --no-dev --optimize-autoloader
+          tools: wp-cli
+      - uses: ./.github/actions/setup-node
+
+      - name: Check version consistency
+        run: pnpm check:version
+
+      - name: Build assets
+        run: pnpm exec tsx scripts/build-ui.ts
+
+      # The template also indexes the built JS, so it can only be compared after the build.
+      # Source references are ignored: they shift with every PHP edit without changing what translators see.
+      - name: Check translation template is up to date
+        run: |
+          pot=languages/pagbank-for-woocommerce.pot
+          wp i18n make-pot . "$RUNNER_TEMP/fresh.pot" --exclude=vendor,wp --domain=pagbank-for-woocommerce --allow-root
+          strip_volatile() { grep -vE '^(#: |# Copyright|"POT-Creation-Date: |"X-Generator: )' "$1"; }
+          if ! diff -u <(strip_volatile "$pot") <(strip_volatile "$RUNNER_TEMP/fresh.pot"); then
+            echo "::error file=$pot::Translation template is outdated. Run pnpm make:pot and commit the result."
+            exit 1
+          fi
+
+      - name: Create zip
+        run: pnpm exec tsx scripts/export.ts
+
+      - name: Verify zip contents
+        run: pnpm exec tsx scripts/verify-export.ts
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: build/pagbank-for-woocommerce-*.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
