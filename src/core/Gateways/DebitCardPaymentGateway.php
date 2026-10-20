@@ -51,6 +51,8 @@ class DebitCardPaymentGateway extends CreditCardPaymentGateway {
 		$this->transfer_of_interest_enabled       = false;
 		$this->maximum_installments_interest_free = 0;
 		$this->threeds_enabled                    = true;
+		$this->threeds_allow_unsupported          = false;
+		$this->threeds_manual_review              = false;
 
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_api_' . $this->id . '_3ds_session', array( $this, 'get_3ds_session' ) );

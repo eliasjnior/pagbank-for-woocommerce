@@ -22,6 +22,7 @@ export interface CardPaymentMethodSettings {
 	card_public_key: string | null;
 	// 3DS settings
 	threeds_enabled: boolean;
+	threeds_allow_unsupported?: boolean;
 	api_3ds_session_url: string;
 	threeds_nonce: string;
 	messages: CardMessages;
