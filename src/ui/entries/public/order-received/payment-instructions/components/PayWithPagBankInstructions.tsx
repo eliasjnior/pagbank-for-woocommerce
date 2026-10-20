@@ -124,7 +124,7 @@ export const PayWithPagBankInstructions = ({
 					<hr />
 					<p className="pagbank-expiration">
 						{sprintf(
-							/* translators: %s: expiration date */
+							/** translators: %s: expiration date */
 							__("Válido até: %s", "pagbank-for-woocommerce"),
 							formatDate(expirationDate),
 						)}
