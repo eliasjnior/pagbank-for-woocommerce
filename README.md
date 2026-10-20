@@ -88,9 +88,9 @@ The zip built for each PR is attached to the workflow run, so it can be installe
 
 ## Releasing
 
-1. On a `vX.Y.Z` branch, run `pnpm bump patch` (or `minor`, `major`, an exact `X.Y.Z`). It updates `package.json`, `composer.json` and the `composer.lock` hash, the plugin header and `PAGBANK_WOOCOMMERCE_VERSION`, `phpstan-bootstrap.php`, the `Stable tag` in `readme.txt` and the `.pot` header, and adds the `= X.Y.Z - YYYY-MM-DD =` changelog heading.
+1. Create the `vX.Y.Z` release branch from `main`, and from it a branch such as `chore/bump-X.Y.Z`. There, run `pnpm bump patch` (or `minor`, `major`, an exact `X.Y.Z`). It updates `package.json`, `composer.json` and the `composer.lock` hash, the plugin header and `PAGBANK_WOOCOMMERCE_VERSION`, `phpstan-bootstrap.php`, the `Stable tag` in `readme.txt` and the `.pot` header, and adds the `= X.Y.Z - YYYY-MM-DD =` changelog heading.
 2. List the changes under that heading in `readme.txt`, and run `pnpm make:pot` if translatable strings changed.
-3. Open a pull request to `main` and merge it once CI passes.
+3. Merge that and the release's other pull requests into `vX.Y.Z`, then open a pull request from `vX.Y.Z` to `main` and merge it once CI passes.
 4. Run the **Release** workflow from `main` (Actions → Release → Run workflow).
 
 The workflow reads the version from `package.json`, reruns CI, tags the commit as `X.Y.Z`, and publishes a GitHub release with the production zip and the changelog entry as notes. The zip carries a build provenance attestation, which `gh attestation verify <zip> --repo <owner>/<repo>` checks.
@@ -105,7 +105,14 @@ WordPress.org serves the version named by `Stable tag` in `trunk/readme.txt`, so
 
 ## Contributing
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced locally by Husky and commitlint and again in CI. `main` is protected: changes land through pull requests only.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced locally by Husky and commitlint and again in CI.
+
+Branches follow the release flow, enforced by the required **Branch name** check:
+
+- Work happens on `<type>/<name>` branches (`feat/pix-refunds`, `fix/boleto-email`, with the Conventional Commits types) and is merged into a `vX.Y.Z` release branch. Renovate also targets the release branches.
+- Only a `vX.Y.Z` branch is merged into `main`.
+
+`main` and the `vX.Y.Z` branches are protected: no direct pushes or force pushes, and every pull request needs the CI checks to pass.
 
 ## License
 
