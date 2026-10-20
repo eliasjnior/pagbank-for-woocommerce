@@ -1,302 +1,119 @@
-# PagBank for WooCommerce #
-**Contributors:** [eliasjnior](https://profiles.wordpress.org/eliasjnior/)  
-**Tags:** woocommerce, pagseguro, pagbank, pagamento, brasil  
-**Requires at least:** 6.7  
-**Tested up to:** 7.0  
-**Requires PHP:** 7.4  
-**Stable tag:** 2.0.2  
-**License:** GPLv2  
-**License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
+# PagBank for WooCommerce
 
-Aceite pagamentos via cartão de crédito, cartão de débito, Pix, boleto e redirecionamento (Pagar com PagBank e Checkout PagBank) no WooCommerce através do PagBank.
+WordPress plugin that adds PagBank payments to WooCommerce: credit card, debit card, Pix, boleto, Pay with PagBank, Checkout PagBank, Google Pay and Apple Pay, on both the classic and the Blocks checkout.
 
-## Description ##
+This README covers development. The store-facing description, installation guide and changelog live in [`readme.txt`](readme.txt), which is what WordPress.org publishes.
 
-O PagBank é uma empresa do grupo UOL.
+## Features
 
-Ele é pioneiro e líder no mercado brasileiro de meios de pagamento online, e possui um portfólio completo para o seu negócio.
+- Transparent checkout for every payment method, on classic (shortcode) and Blocks checkout
+- Card tokenization, saved cards, installments and 3D Secure authentication
+- Pix QR codes and boleto bank slips on the order page and in customer e-mails
+- Full and partial refunds from the order screen
+- Order status kept in sync through PagBank webhooks
+- WooCommerce Subscriptions renewals
+- Split payments for Dokan and WCFM marketplaces
+- Brazilian checkout fields (CPF/CNPJ, number, neighborhood, cellphone) that defer to Brazilian Market on WooCommerce or LinkNacional's Calculadora de Frete when they are active
 
-[Clique aqui](https://pagseguro.uol.com.br/campanhas/contato/?parceiro=woocommerce) para entrar em contato com o nosso time comercial para mais informações e negociações.
+## Requirements
 
-### Recursos ###
+| | Version |
+| --- | --- |
+| PHP | 7.4 to 8.3 |
+| WordPress | 6.7+ |
+| WooCommerce | 9.9+ |
 
-Nosso módulo oferece uma integração completa com a sua loja. Receba e gerencie pagamentos com a pioneira e líder de mercado no Brasil!
+Development also needs Docker, Node 24 and pnpm (the version is pinned in `package.json`).
 
-Aqui estão alguns dos benefícios dessa integração:
+## Getting started
 
-1. Fácil instalação e configuração para integrar **pagamentos no Cartão de Crédito, Cartão de Débito, Pix, Boleto, Pagar com PagBank e Checkout PagBank** em sua loja virtual WooCommerce, proporcionando flexibilidade aos seus clientes.
-2. **Compatível com Legacy Checkout e Checkout Blocks:** Todos os métodos de pagamento funcionam tanto no checkout clássico (shortcode) quanto no novo checkout em blocos do WooCommerce.
-3. **Parcelamento personalizável:** Ofereça parcelamento em até 18x (mediante aprovação), com ou sem juros, permitindo que você configure essa opção de acordo com suas preferências através do plugin.
-4. **Autenticação 3D Secure:** Adicione uma camada extra de segurança nas transações com cartão, transferindo a responsabilidade de fraude para o banco emissor em transações autenticadas.
-5. **Reembolso fácil:** Realize reembolsos totais ou parciais diretamente na plataforma, proporcionando uma experiência satisfatória aos seus clientes.
-6. **Segurança do cliente:** Dê aos seus clientes a opção de salvar seu método de pagamento, sem a necessidade de armazenar o número do cartão, garantindo a segurança de dados sensíveis.
-7. **Checkout Transparente:** Permita que seus clientes façam o pagamento sem sair do seu site, proporcionando uma experiência de compra fluida e conveniente.
-8. **Instruções de pagamento no pedido e e-mail:** Pix e boleto são exibidos na página do pedido e no e-mail do cliente, com código de barras escaneável para o boleto.
-9. **Status de pedidos atualizados automaticamente:** Através do Webhook de retorno de dados do PagBank, os status dos pedidos são atualizados automaticamente, permitindo que você acompanhe o processo de cada transação (aprovado, negado, cancelado, etc).
+```bash
+pnpm install
+docker compose up -d
+pnpm run setup
+```
 
-### Cartão de Crédito ###
+`pnpm run setup` installs the dependencies, builds the assets, installs WordPress with WooCommerce and Storefront, and activates the plugin. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
 
-Receba e gerencie transações de cartão de crédito em sua loja.
+| Service | URL |
+| --- | --- |
+| WordPress | http://wordpress.localhost (user `wordpress`, password `wordpress`) |
+| phpMyAdmin | http://localhost:8080 |
+| Mailpit | http://localhost:8025 |
 
-Principais Recursos:
+The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`.
 
-* Método transparente
-* Autenticação 3D Secure
-* Parcelamento em até 18x (mediante aprovação)
-* Tokenização de cartão para compras futuras
-* Reembolso online total ou parcial
-* Personalização de regras para juros e parcelamento
-* Informação ao cliente dos juros cobrados com atualização do total do pedido
-* Consolidação de status (cancelamento e confirmação de pagamento automática)
+## Commands
 
-### Cartão de Débito ###
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Builds the UI in watch mode |
+| `pnpm build` | Type-checks and builds the production assets into `dist/` |
+| `pnpm lint` | Runs PHPCS and Biome |
+| `pnpm lint:fix:core` / `pnpm lint:fix:ui` | Fixes PHP / TypeScript style issues |
+| `pnpm analyse` | Runs PHPStan |
+| `pnpm test` | Runs PHPUnit (`pnpm test path/to/Test.php` for one file) |
+| `pnpm make:pot` | Regenerates `languages/pagbank-for-woocommerce.pot` |
+| `pnpm bump <major\|minor\|patch\|X.Y.Z>` | Sets the new version everywhere it is declared and opens its changelog entry |
+| `pnpm check:version` | Checks that every version declaration matches `package.json` |
+| `pnpm export` | Builds the production zip into `build/` and verifies its contents |
+| `pnpm wp <command>` | Runs WP-CLI against the development site |
 
-Receba e gerencie transações de cartão de débito em sua loja.
+PHP tooling and Composer run inside Docker, so no local PHP install is needed.
 
-Principais Recursos:
+## Project layout
 
-* Método transparente
-* Autenticação 3D Secure obrigatória, transferindo a responsabilidade por fraude ao banco emissor
-* Reembolso online total ou parcial
-* Consolidação de status (cancelamento e confirmação de pagamento automática)
+```
+src/core/        PHP code (PSR-4, namespace PagBank_WooCommerce\)
+src/templates/   PHP templates for checkout, order and e-mails
+src/ui/          TypeScript, React and SCSS sources
+scripts/         Build, export and Docker wrapper scripts
+tests/           PHPUnit tests
+languages/       Translation template
+wordpress_org_assets/  Banners, icons and screenshots for WordPress.org
+```
 
-### Pix ###
+## Continuous integration
 
-Receba e gerencie transações por Pix totalmente integrado a sua conta do PagBank.
+Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 
-Principais Recursos:
+- PHPCS, PHPStan, and PHPUnit on PHP 7.4 to 8.3
+- Biome and TypeScript
+- Conventional Commits on every commit and on the PR title (the squash commit on `main`)
+- A package build that checks version consistency, fails when the `.pot` is outdated, and verifies that the zip has every asset the PHP enqueues and nothing from development
+- [Plugin Check](https://wordpress.org/plugins/plugin-check/), the WordPress.org review tool, on the built zip: errors fail the job, warnings are annotated
+- A smoke test that installs the zip with WooCommerce on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and on the latest one, then checks that every gateway registers, the storefront and the gateway settings screens render, and the plugin logs no PHP errors. `scripts/smoke-test.sh` runs the same checks against any local wp-env site
 
-* Método transparente
-* QR code e código copia e cola exibidos na página do pedido e no e-mail do cliente
-* Tempo de expiração configurável
-* Reembolso online total ou parcial
-* Consolidação de status (cancelamento e confirmação de pagamento automática)
+The zip built for each PR is attached to the workflow run, so it can be installed on a test store.
 
-**Atenção:** Para o funcionamento do PIX corretamente é necessário que você tenha uma chave Pix cadastrada na sua conta PagBank. Quer saber como cadastrar a chave PIX? [Consulte nosso artigo: Como fazer um cadastro de Chave Pix no PagBank?](https://faq.pagbank.com.br/duvida/como-cadastrar-uma-chave-pix-no-pagbank/1089).
+## Releasing
 
-### Boleto Bancário ###
+1. Create the `vX.Y.Z` release branch from `main`, and from it a branch such as `chore/bump-X.Y.Z`. There, run `pnpm bump patch` (or `minor`, `major`, an exact `X.Y.Z`). It updates `package.json`, `composer.json` and the `composer.lock` hash, the plugin header and `PAGBANK_WOOCOMMERCE_VERSION`, `phpstan-bootstrap.php`, the `Stable tag` in `readme.txt` and the `.pot` header, and adds the `= X.Y.Z - YYYY-MM-DD =` changelog heading.
+2. List the changes under that heading in `readme.txt`, and run `pnpm make:pot` if translatable strings changed.
+3. Merge that and the release's other pull requests into `vX.Y.Z`, then open a pull request from `vX.Y.Z` to `main` and merge it once CI passes.
+4. Run the **Release** workflow from `main` (Actions → Release → Run workflow).
 
-Receba e gerencie transações por Boleto totalmente integrado a sua conta do PagBank.
+The workflow reads the version from `package.json`, reruns CI, tags the commit as `X.Y.Z`, and publishes a GitHub release with the production zip and the changelog entry as notes. The zip carries a build provenance attestation, which `gh attestation verify <zip> --repo <owner>/<repo>` checks.
 
-Principais Recursos:
+## Deploying to WordPress.org
 
-* Método transparente
-* Vencimento configurável
-* Exibição do boleto e do código de barras escaneável na página do pedido e no e-mail do cliente
-* Reembolso online total ou parcial
-* Consolidação de status (cancelamento e confirmação de pagamento automática)
+Run the **Deploy to WordPress.org** workflow (Actions → Deploy to WordPress.org → Run workflow) from the ref whose `package.json` holds the version to ship. It downloads that version's GitHub release zip, verifies its provenance attestation, and imports it into `tags/X.Y.Z` of the plugin's SVN repository. It refuses when the release is missing or still a draft, and when the SVN tag already exists. `trunk/` and `assets/` are never touched.
 
-### Pagar com PagBank ###
+`dry-run` is on by default: the run does every check and lists the files it would import, but writes nothing. Untick it to deploy. The SVN write runs in the `wordpress-org` environment, which holds the `SVN_USERNAME` and `SVN_PASSWORD` secrets and can require a reviewer's approval.
 
-Aceite pagamentos através da carteira digital PagBank. O cliente é redirecionado para concluir a compra usando saldo da conta ou cartão de crédito pelo app PagBank.
+WordPress.org serves the version named by `Stable tag` in `trunk/readme.txt`, so a new tag is not the default download until trunk is updated to point at it.
 
-Principais Recursos:
+## Contributing
 
-* Pagamento por redirecionamento
-* Fluxo otimizado para celular
-* Reembolso online total ou parcial
-* Consolidação de status (cancelamento e confirmação de pagamento automática)
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced locally by Husky and commitlint and again in CI.
 
-### Checkout PagBank ###
+Branches follow the release flow, enforced by the required **Branch name** check:
 
-Opção "tudo em um": o cliente é redirecionado para uma página única de pagamento do PagBank que aceita cartão de crédito, Pix, boleto e saldo PagBank.
+- Work happens on `<type>/<name>` branches (`feat/pix-refunds`, `fix/boleto-email`, with the Conventional Commits types) and is merged into a `vX.Y.Z` release branch. Renovate also targets the release branches.
+- Only a `vX.Y.Z` branch is merged into `main`.
 
-Principais Recursos:
+`main` and the `vX.Y.Z` branches are protected: no direct pushes or force pushes, and every pull request needs the CI checks to pass.
 
-* Pagamento por redirecionamento em página única
-* Tempo de expiração configurável
-* Reembolso online total ou parcial
-* Consolidação de status (cancelamento e confirmação de pagamento automática)
+## License
 
-Essa integração oferece uma série de recursos que vão facilitar e aprimorar a experiência de pagamento em sua loja virtual.
-
-Tem alguma dúvida sobre o funcionamento ou está com algum problema técnico relacionado ao nosso plugin WooCommerce PagBank? Entre em contato com nosso [Time de integração](https://app.pipefy.com/public/form/sBlh9Nq6).
-
-## Installation ##
-
-### Scripts ###
-
-Para que os métodos de pagamento tenham o correto funcionamento, durante o checkout será inicializado remotamente um Javascript externo do SDK do PagBank, que será responsável para criptografar o cartão de crédito e manter os dados dos usuários seguros.
-
-### Requirements ###
-
-Para instalar o PagBank for WooCommerce, você precisa:
-
-* WordPress versão 5.4 ou superior (instalado)
-* WooCommerce versão 3.9 ou superior (instalado e ativado)
-* PHP versão 7.4 ou superior
-* Conta no PagBank ([cadastre-se](https://cadastro.pagseguro.uol.com.br/))
-* Compatível com o checkout clássico (shortcode) e com o WooCommerce Checkout Blocks
-
-O plugin adiciona nativamente os campos de CPF/CNPJ, número, bairro e celular ao checkout, com suporte ao novo CNPJ alfanumérico. Não é mais necessário instalar o Brazilian Market on WooCommerce. Caso você utilize o [Brazilian Market on WooCommerce](https://br.wordpress.org/plugins/woocommerce-extra-checkout-fields-for-brazil/) ou a [Calculadora de Frete e Campos Checkout para o Brasil](https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/), os campos desses plugins serão utilizados automaticamente, sem duplicação.
-
-### Instructions ###
-
-1. Faça login na administração do WordPress.
-2. Vá em **Plugins > Adicionar novo**.
-3. Procure pelo plugin **pagbank-for-woocommerce**.
-4. Clique em **Instalar agora** e aguarde até que o plugin esteja instalado.
-5. Você pode ativar o plugin imediatamente clicando em **Ativar** na página de sucesso. Se você quiser ativá-lo mais tarde, poderá fazê-lo através de **Plugins > Plugins instalados**.
-
-### Setup and Configuration ###
-
-Siga os passos abaixo para conectar o plugin à sua conta PagBank:
-
-1. Após ter ativado o plugin PagBank for WooCommerce, vá em **WooCommerce > Configurações**.
-2. Clique na aba **Pagamentos**.
-3. A lista de métodos de pagamento incluirá as seguintes opções: PagBank Cartão de Crédito, PagBank Cartão de Débito, PagBank Boleto, PagBank Pix, Pagar com PagBank e Checkout PagBank.
-4. Clique no método de pagamento que você deseja ativar.
-5. Clique no botão **Conectar ao PagBank** para associar a sua conta. Assim que você conectar ela em qualquer método de pagamento, ela conectará todos os outros métodos de pagamento na mesma conta, porém não ativará o método de pagamento automaticamente.
-6. Depois que você conectar a sua conta PagBank, configure as outras opções de cada método, como parcelamento e prazo para pagamento.
-7. Clique em **Salvar alterações**.
-
-### Split de pagamento ###
-
-O plugin disponibiliza suporte ao split de pagamento para marketplace. Para cada lojista cadastrado na sua loja, é necessário [acessar a conta](https://minhaconta.pagbank.com.br) através do navegador e navegar até *Vendas > Identificador para Marketplace*.
-
-Com o identificador em mãos, navegue até a conta do lojista e clique no menu *Gerenciador da loja*, e depois em *Configurações > Pagamento*, deve ser preenchido o identificador da conta no campo correspondente.
-
-Caso o lojista não possua o identificador da conta preenchido, os produtos cadastrado por esse lojista não estarão disponíveis durante o checkout.
-
-## Screenshots ##
-
-### 1. Pagamento com cartão de crédito salvo. ###
-![Pagamento com cartão de crédito salvo.](https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/screenshot-1.png)
-
-### 2. Pagamento com novo cartão de crédito. ###
-![Pagamento com novo cartão de crédito.](https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/screenshot-2.png)
-
-### 3. Pagamento via Pix. ###
-![Pagamento via Pix.](https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/screenshot-3.png)
-
-### 4. Pagamento via boleto. ###
-![Pagamento via boleto.](https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/screenshot-4.png)
-
-### 5. Configurações de pagamentos. ###
-![Configurações de pagamentos.](https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/screenshot-5.png)
-
-### 6. Configuração do identificador do cliente no marketplace. ###
-![Configuração do identificador do cliente no marketplace.](https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/screenshot-6.png)
-
-### 7. Histórico de pagamentos para o lojista no marketplace. ###
-![Histórico de pagamentos para o lojista no marketplace.](https://raw.githubusercontent.com/pagseguro/pagbank-for-woocommerce/main/wordpress_org_assets/screenshot-7.png)
-
-
-## Changelog ##
-
-### 1.0.0 - 2023-06-26 ###
-* Release inicial.
-
-### 1.0.1 - 2023-06-27 ###
-* Adicionado novos logs para tratamento de webhooks.
-
-### 1.0.2 - 2023-07-20 ###
-* Adicionado suporte ao WooCommerce 7.9.
-* Adicionado obrigatoriedade do bairro durante o checkout.
-* Adicionado melhorias nos logs.
-* Correção de bugs durante a conexão da conta PagBank.
-
-### 1.0.3 - 2023-08-16 ###
-* Aumentado tempo de timeout para conexão com o PagBank.
-* Adicionado suporte ao WooCommerce Subscriptions com cobranças automáticas.
-* Corrigido pequenos bugs.
-
-### 1.0.4 - 2023-10-26 ###
-* Adicionado suporte ao WooCommerce HPOS.
-
-### 1.0.5 - 2023-11-17 ###
-* Corrigido bugs durante a instalação.
-
-### 1.0.6 - 2023-12-04 ###
-* Ajustes para aprovação do plugin pelo time do WordPress.
-* Corrigido erro na geração do Pix.
-
-### 1.0.7 - 2024-23-01 ###
-* Ajustado warnings em modo de depuração do WordPress.
-* Alterado título do método de pagamento dentro da visualização do pedido no dashboard.
-* Adicionado mensagens de validação na configuração dos métodos de pagamento.
-
-### 1.1.0 - 2024-24-02 ###
-* Corrigido processamento de webhooks.
-* Adicionado suporte para novas versões do WooCommerce e WordPress.
-
-### 1.1.1 - 2024-28-04 ###
-* Corrigido URL de webhook inválida para instalações que utilizam o WordPress em subpastas.
-* Adicionado suporte a novas versão do WordPress
-* Corrigido URL de API de parcelamento.
-
-### 1.1.2 - 2024-06-06 ###
-* Corrigido erro de validação para cartões American Express.
-
-### 1.2.0 - 2024-06-10 ###
-* Adicionado suporte para marketplace Dokan e WCFM.
-
-### 1.2.1 - 2024-11-10 ###
-* Adicionado suporte ao WordPress 6.7 e WooCommerce 9.3.
-
-### 1.2.2 - 2025-01-30 ###
-* Atualizado dependências de desenvolvimento.
-* Corrigido erro ao atualizar o token de acesso.
-* Melhoria no tratamento de webhooks.
-* Adicionado alerta ao tentar conectar a conta do PagBank em ambiente de desenvolvimento.
-
-### 1.2.3 - 2025-02-04 ###
-* Corrigido problemas com CPF e CNPJ.
-
-### 1.2.4 - 2025-02-17 ###
-* Corrigido configuração para versões mais antigas do WooCommerce.
-* Adicionado suporte a novas versões do WordPress e WooCommerce.
-* Corrigido erro ao tentar pagar por um pedido criado manualmente.
-
-### 1.2.5 - 2025-09-29 ###
-* Atualização de segurança das bibliotecas.
-* Corrigido erro ao tentar pagar um pedido através de link utilizando outro método de pagamento.
-
-### 1.2.6 - 2025-10-12 ###
-* Corrigido webhook em algumas instalações.
-
-### 2.0.0 - 2026-03-23 ###
-* Adicionado suporte ao WooCommerce Checkout Blocks para todos os métodos de pagamento.
-* Adicionado método de pagamento Cartão de Débito.
-* Adicionado método de pagamento "Pagar com PagBank" (redirecionamento).
-* Adicionado método de pagamento "Checkout PagBank" (redirecionamento).
-* Adicionado autenticação 3D Secure para pagamentos com cartão.
-* Adicionado exibição do Pix e boleto na página do pedido e no e-mail do cliente.
-* Adicionado código de barras escaneável nas instruções de pagamento do boleto.
-* Adicionado campo de celular com validação no checkout.
-* Adicionado validadores nativos de CPF e CNPJ.
-* Adicionado suporte a parcelamento em até 18x (necessário aprovação).
-* Adicionado página de configurações dos gateways com design moderno.
-* Adicionado ícones nos métodos de pagamento no checkout.
-* Melhorado sistema de logs.
-* Melhorado fluxo de checkout mobile para "Pagar com PagBank".
-* Melhorado tratamento de erros na conexão OAuth com PagBank.
-* Melhorado acessibilidade nos campos de cartão no checkout.
-* Corrigido processamento de webhook para status CANCELED.
-* Corrigido agregação de splits por conta no marketplace.
-* Corrigido compatibilidade com PHP 7.4.
-
-### 2.0.1 - 2026-05-28 ###
-* Corrigido suporte ao pagamento com Cartão de Débito no checkout clássico.
-* Adicionado suporte ao WooCommerce 10.8.
-* Melhorado mensagens de erro da autenticação 3D Secure para serem mais claras ao cliente.
-* Melhorado validação do campo de celular no checkout, evitando falhas durante o pagamento.
-* Melhorado processamento de webhooks, com confirmação de status mais confiável e registro de notas no pedido a cada evento recebido.
-* Melhorado tratamento de nomes com caracteres especiais ao enviar dados ao PagBank.
-* Corrigido raros casos de duplicação de cobranças e pedidos em situações de instabilidade.
-* Corrigido limpeza dos campos de cartão após erro ou ao retornar para a página de pagamento.
-* Corrigido pequenos problemas no checkout e nas configurações do plugin.
-* Atualizado textos e documentação.
-
-### 2.0.2 - 2026-07-06 ###
-* Adicionado suporte ao novo formato alfanumérico de CNPJ no checkout.
-* Adicionado campos nativos de tipo de pessoa, CPF/CNPJ, razão social, número, bairro e celular nos checkouts clássico e em blocos — o plugin Brazilian Market on WooCommerce não é mais obrigatório.
-* Adicionado compatibilidade com os campos do Brazilian Market on WooCommerce e da Calculadora de Frete e Campos Checkout para o Brasil (quando ativos, os campos deles são utilizados automaticamente, sem duplicação).
-* Adicionado edição dos campos brasileiros na tela do pedido no admin, com máscaras de CPF/CNPJ — inclusive para pedidos do checkout clássico e criados manualmente.
-* Adicionado aviso recomendando a desativação do Brazilian Market on WooCommerce, que não possui suporte ao CNPJ alfanumérico.
-* Melhorado a ordem dos campos no checkout: documentos logo após o país, número ao lado do endereço e celular antes do telefone.
-* Melhorado o resumo do endereço no checkout em blocos e na confirmação do pedido: número, bairro e celular exibidos dentro do endereço e CPF/CNPJ de forma resumida.
-* Corrigido salvamento de CNPJ parcialmente digitado em pedidos de pessoa física no checkout clássico — somente o documento do tipo de pessoa selecionado é salvo.
-* Corrigido indicador de campo obrigatório duplicado no checkout clássico.
-* Corrigido cálculo do total no Checkout PagBank, incluindo o frete corretamente.
-* Melhorado registro de logs da API, mantendo o reference_id para facilitar o rastreamento.
+GPL-2.0, see the plugin header in `pagbank-for-woocommerce.php`.

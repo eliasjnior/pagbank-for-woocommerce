@@ -11,6 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use libphonenumber\NumberParseException;
+use libphonenumber\PhoneNumberFormat;
+use libphonenumber\PhoneNumberUtil;
 use PagBank_WooCommerce\Validators\CPF;
 use PagBank_WooCommerce\Validators\CNPJ;
 use PagBank_WooCommerce\Validators\AlphanumericCNPJ;
@@ -165,6 +168,39 @@ class Helpers {
 		$validator = new CPF( $cpf );
 
 		return $validator->format();
+	}
+
+	/**
+	 * Whether a Brazilian cellphone number is valid.
+	 *
+	 * @param string $cellphone Cellphone number in any accepted notation.
+	 */
+	public static function is_valid_cellphone( string $cellphone ): bool {
+		$phone_util = PhoneNumberUtil::getInstance();
+
+		try {
+			return $phone_util->isValidNumber( $phone_util->parse( $cellphone, 'BR' ) );
+		} catch ( NumberParseException $e ) {
+			return false;
+		}
+	}
+
+	/**
+	 * Format a cellphone number as (00) 00000-0000.
+	 *
+	 * National, not international: it matches what the checkout masks render, so
+	 * a stored value round-trips instead of its +55 being read back as the DDD.
+	 *
+	 * @param string $cellphone Cellphone number in any accepted notation.
+	 */
+	public static function format_cellphone( string $cellphone ): string {
+		$phone_util = PhoneNumberUtil::getInstance();
+
+		try {
+			return $phone_util->format( $phone_util->parse( $cellphone, 'BR' ), PhoneNumberFormat::NATIONAL );
+		} catch ( NumberParseException $e ) {
+			return $cellphone;
+		}
 	}
 
 	/**
@@ -363,5 +399,24 @@ class Helpers {
 			'is_valid'      => $is_valid,
 			'error_message' => $error_message,
 		);
+	}
+
+	/**
+	 * Queue a payment error notice for the legacy checkout.
+	 *
+	 * The Store API renders the `message` returned by `process_payment()` and
+	 * never flushes the notice queue when a gateway fails with one, so a notice
+	 * added here survives in the session and `CartController::validate_cart_items()`
+	 * turns it into a 409 cart error on the customer's next place-order request,
+	 * blocking every retry before any gateway runs.
+	 *
+	 * @param string $message Customer-facing error message.
+	 */
+	public static function add_payment_error_notice( string $message ): void {
+		if ( WC()->is_store_api_request() ) {
+			return;
+		}
+
+		wc_add_notice( $message, 'error' );
 	}
 }

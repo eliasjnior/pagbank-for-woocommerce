@@ -47,6 +47,28 @@ class ApiHelpersTest extends TestCase {
 	}
 
 	/**
+	 * The boleto holder e-mail is rejected with 40002 on any capital letter.
+	 *
+	 * @dataProvider sanitize_email_provider
+	 */
+	public function test_sanitize_pagbank_email_normalizes_case_and_spacing( string $input, string $expected ): void {
+		$this->assertSame( $expected, ApiHelpers::sanitize_pagbank_email( $input ) );
+	}
+
+	public function sanitize_email_provider(): array {
+		return array(
+			'lowercase unchanged'  => array( 'john.doe@example.com', 'john.doe@example.com' ),
+			'capitalized local'    => array( 'John.Doe@example.com', 'john.doe@example.com' ),
+			'uppercase domain'     => array( 'john.doe@EXAMPLE.COM', 'john.doe@example.com' ),
+			'all uppercase'        => array( 'JOHN.DOE@EXAMPLE.COM', 'john.doe@example.com' ),
+			'surrounding spaces'   => array( '  John.Doe@Example.com  ', 'john.doe@example.com' ),
+			'plus addressing kept' => array( 'John+Store@example.com', 'john+store@example.com' ),
+			'subdomain and dashes' => array( 'Jo-Hn@Mail.Example.co.uk', 'jo-hn@mail.example.co.uk' ),
+			'empty string'         => array( '', '' ),
+		);
+	}
+
+	/**
 	 * Two requests with the same payment intent must produce the same key
 	 * so the PagBank API can dedupe them server-side.
 	 */
@@ -131,6 +153,99 @@ class ApiHelpersTest extends TestCase {
 	}
 
 	/**
+	 * The submission identifier is what separates resending one attempt from
+	 * retrying: the same identifier must collapse to the same key.
+	 */
+	public function test_get_create_order_idempotency_key_is_stable_for_same_submission(): void {
+		$data = $this->sample_order_payload();
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' )
+		);
+	}
+
+	/**
+	 * A retry on the same order carries a new submission identifier, so the key
+	 * must change even though order, customer, amount and items are identical.
+	 */
+	public function test_get_create_order_idempotency_key_changes_with_submission(): void {
+		$data = $this->sample_order_payload();
+
+		$this->assertNotSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-b' )
+		);
+	}
+
+	/**
+	 * Without a submission identifier the key stays scoped to the order, which
+	 * is what renewals and admin-created orders rely on.
+	 */
+	public function test_get_create_order_idempotency_key_falls_back_to_order_scope(): void {
+		$data = $this->sample_order_payload();
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, null )
+		);
+
+		$this->assertNotSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 76 )
+		);
+	}
+
+	/**
+	 * With no submission identifier (stale checkout script), a retry still has
+	 * to get a new key: the payload stands in for the missing discriminator.
+	 */
+	public function test_get_create_order_idempotency_key_uses_payload_without_submission(): void {
+		$data           = $this->sample_order_payload();
+		$data['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-one' );
+
+		$retry = $data;
+		$retry['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-two' );
+
+		$this->assertNotSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $retry, 75 )
+		);
+	}
+
+	/**
+	 * A deterministic payload with no submission identifier — a renewal
+	 * charging a stored card — must stay deduped so a re-run cron cannot
+	 * charge twice.
+	 */
+	public function test_get_create_order_idempotency_key_dedupes_deterministic_payload(): void {
+		$data = $this->sample_order_payload();
+		$data['charges'][0]['payment_method']['card'] = array( 'id' => 'CARD_ABC' );
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 ),
+			ApiHelpers::get_create_order_idempotency_key( $data, 75 )
+		);
+	}
+
+	/**
+	 * A submission identifier takes precedence: the same attempt dedupes even
+	 * though the encrypted blob differs on every encrypt() call.
+	 */
+	public function test_get_create_order_idempotency_key_ignores_payload_with_submission(): void {
+		$data           = $this->sample_order_payload();
+		$data['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-one' );
+
+		$same_attempt = $data;
+		$same_attempt['charges'][0]['payment_method']['card'] = array( 'encrypted' => 'blob-two' );
+
+		$this->assertSame(
+			ApiHelpers::get_create_order_idempotency_key( $data, 75, 'submission-a' ),
+			ApiHelpers::get_create_order_idempotency_key( $same_attempt, 75, 'submission-a' )
+		);
+	}
+
+	/**
 	 * Same charge + same amount = same refund key.
 	 */
 	public function test_get_refund_idempotency_key_is_stable(): void {
@@ -161,6 +276,50 @@ class ApiHelpersTest extends TestCase {
 			ApiHelpers::get_refund_idempotency_key( 'CHAR_ABC', 25.50 ),
 			ApiHelpers::get_refund_idempotency_key( 'CHAR_ABC', 30.00 )
 		);
+	}
+
+	/**
+	 * The QR code image link must be selected by its rel, not by index, since
+	 * the Pix charge response also carries QRCODE.BASE64 and JSR_BIOMETRIC_PIX.
+	 */
+	public function test_find_charge_link_href_returns_matching_rel(): void {
+		$links = array(
+			array(
+				'rel'  => 'SELF',
+				'href' => 'https://api/charges/CHAR_1',
+			),
+			array(
+				'rel'  => 'QRCODE.PNG',
+				'href' => 'https://api/qrcode/QRCO_1/png',
+			),
+			array(
+				'rel'  => 'QRCODE.BASE64',
+				'href' => 'https://api/qrcode/QRCO_1/base64',
+			),
+			array(
+				'rel'  => 'JSR_BIOMETRIC_PIX',
+				'href' => 'https://openfinance/checkout?intentId=1',
+			),
+		);
+
+		$this->assertSame( 'https://api/qrcode/QRCO_1/png', ApiHelpers::find_charge_link_href( $links, 'QRCODE.PNG' ) );
+		$this->assertSame( 'https://api/qrcode/QRCO_1/base64', ApiHelpers::find_charge_link_href( $links, 'QRCODE.BASE64' ) );
+	}
+
+	/**
+	 * A missing rel (or an empty links array) must yield an empty string
+	 * instead of raising an undefined-index error.
+	 */
+	public function test_find_charge_link_href_returns_empty_when_absent(): void {
+		$links = array(
+			array(
+				'rel'  => 'SELF',
+				'href' => 'https://api/charges/CHAR_1',
+			),
+		);
+
+		$this->assertSame( '', ApiHelpers::find_charge_link_href( $links, 'QRCODE.PNG' ) );
+		$this->assertSame( '', ApiHelpers::find_charge_link_href( array(), 'QRCODE.PNG' ) );
 	}
 
 	/**

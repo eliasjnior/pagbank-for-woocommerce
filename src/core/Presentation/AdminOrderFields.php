@@ -201,14 +201,18 @@ class AdminOrderFields {
 			return self::mark_rows_hidden( $fields, self::HIDDEN_VIEW_ROWS );
 		}
 
-		if ( ! LegacyCheckoutFields::external_provides_address_fields() ) {
-			$fields = self::insert_interop_rows(
-				$fields,
-				array(
-					'number'       => array( 'label' => __( 'Número', 'pagbank-for-woocommerce' ) ),
-					'neighborhood' => array( 'label' => __( 'Bairro', 'pagbank-for-woocommerce' ) ),
-				)
-			);
+		$address_rows = array();
+
+		if ( ! LegacyCheckoutFields::external_provides_number_field() ) {
+			$address_rows['number'] = array( 'label' => __( 'Número', 'pagbank-for-woocommerce' ) );
+		}
+
+		if ( ! LegacyCheckoutFields::external_provides_neighborhood_field() ) {
+			$address_rows['neighborhood'] = array( 'label' => __( 'Bairro', 'pagbank-for-woocommerce' ) );
+		}
+
+		if ( $address_rows ) {
+			$fields = self::insert_interop_rows( $fields, $address_rows );
 		}
 
 		return self::apply_edit_form_layout( $fields, false );
@@ -248,8 +252,11 @@ class AdminOrderFields {
 			}
 		}
 
-		if ( ! LegacyCheckoutFields::external_provides_address_fields() ) {
-			$rows['number']       = array( 'label' => __( 'Número', 'pagbank-for-woocommerce' ) );
+		if ( ! LegacyCheckoutFields::external_provides_number_field() ) {
+			$rows['number'] = array( 'label' => __( 'Número', 'pagbank-for-woocommerce' ) );
+		}
+
+		if ( ! LegacyCheckoutFields::external_provides_neighborhood_field() ) {
 			$rows['neighborhood'] = array( 'label' => __( 'Bairro', 'pagbank-for-woocommerce' ) );
 		}
 

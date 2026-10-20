@@ -600,15 +600,8 @@
 
 // Remove default WooCommerce form styling when React is active
 #pagbank-gateway-settings-root {
-	// Hide the default WooCommerce save button
+	// admin_options() drops the button, but the paragraph still holds the nonce.
 	~ .submit {
-		display: none;
-	}
-}
-
-// Hide WooCommerce form elements
-.woocommerce-save-button {
-	#pagbank-gateway-settings-root ~ & {
 		display: none;
 	}
 }

@@ -1,0 +1,33 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended",
+		":semanticCommits",
+		":timezone(America/Sao_Paulo)",
+		"schedule:weekly",
+		"helpers:pinGitHubActionDigests"
+	],
+	"baseBranchPatterns": ["/^v\\d+\\.\\d+\\.\\d+$/"],
+	"labels": ["dependencies"],
+	"minimumReleaseAge": "3 days",
+	"osvVulnerabilityAlerts": true,
+	"vulnerabilityAlerts": {
+		"labels": ["dependencies", "security"],
+		"schedule": ["at any time"],
+		"minimumReleaseAge": null
+	},
+	"lockFileMaintenance": {
+		"enabled": true
+	},
+	"packageRules": [
+		{
+			"description": "One weekly PR for the routine updates; majors still get their own.",
+			"matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+			"groupName": "non-major dependencies"
+		},
+		{
+			"matchManagers": ["github-actions"],
+			"groupName": "GitHub Actions"
+		}
+	]
+}

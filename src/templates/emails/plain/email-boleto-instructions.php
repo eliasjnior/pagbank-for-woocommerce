@@ -16,7 +16,7 @@ echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n"
 
 echo esc_html__( 'Use o código de barras abaixo para pagar o boleto:', 'pagbank-for-woocommerce' ) . "\n\n";
 
-echo $boleto_barcode . "\n\n";
+echo esc_html( $boleto_barcode ) . "\n\n";
 
 echo "---------------------------------------------------------------------\n\n";
 
@@ -27,7 +27,7 @@ echo '   ' . esc_html__( 'Copie o código de barras acima e cole no aplicativo d
 
 echo '2. ' . esc_html__( 'IMPRIMIR O BOLETO:', 'pagbank-for-woocommerce' ) . "\n";
 echo '   ' . esc_html__( 'Acesse o link abaixo para baixar o PDF do boleto:', 'pagbank-for-woocommerce' ) . "\n";
-echo '   ' . $boleto_link_pdf . "\n";
+echo '   ' . esc_url_raw( $boleto_link_pdf ) . "\n";
 echo '   ' . esc_html__( 'Efetue o pagamento em qualquer banco ou lotérica.', 'pagbank-for-woocommerce' ) . "\n\n";
 
 echo '3. ' . esc_html__( 'INTERNET BANKING:', 'pagbank-for-woocommerce' ) . "\n";

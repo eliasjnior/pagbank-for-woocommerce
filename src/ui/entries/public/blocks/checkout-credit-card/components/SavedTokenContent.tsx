@@ -10,6 +10,7 @@ import type {
 	EventRegistrationProps,
 } from "@woocommerce/types";
 import { useEffect, useRef } from "react";
+import { createSubmissionId, SUBMISSION_ID_FIELD } from "@/shared/submission-id";
 import { useInstallments } from "../hooks/useInstallments";
 import { settings } from "../settings";
 import { InstallmentsSelect } from "./InstallmentsSelect";
@@ -27,7 +28,7 @@ export const SavedTokenContent = ({
 	eventRegistration,
 	emitResponse,
 	billing,
-}: SavedTokenContentProps): JSX.Element => {
+}: SavedTokenContentProps): JSX.Element | null => {
 	const { installments, setInstallments, installmentPlans, isLoading } = useInstallments({
 		cartTotalInCents: billing.cartTotal.value,
 		paymentToken: token,
@@ -48,6 +49,7 @@ export const SavedTokenContent = ({
 				type: emitResponse.responseTypes.SUCCESS,
 				meta: {
 					paymentMethodData: {
+						[SUBMISSION_ID_FIELD]: createSubmissionId(),
 						"wc-pagbank_credit_card-payment-token": token,
 						"pagbank_credit_card-installments": installmentsRef.current,
 					},
@@ -58,17 +60,19 @@ export const SavedTokenContent = ({
 		return unsubscribe;
 	}, [token]);
 
+	if (!settings.installments_enabled || settings.cart_has_subscription) {
+		return null;
+	}
+
 	return (
 		<div className="pagbank-credit-card-saved-token">
-			{settings.installments_enabled && !settings.cart_has_subscription && (
-				<InstallmentsSelect
-					id={`pagbank-installments-${token}`}
-					value={installments}
-					onChange={setInstallments}
-					plans={installmentPlans}
-					isLoading={isLoading}
-				/>
-			)}
+			<InstallmentsSelect
+				id={`pagbank-installments-${token}`}
+				value={installments}
+				onChange={setInstallments}
+				plans={installmentPlans}
+				isLoading={isLoading}
+			/>
 		</div>
 	);
 };

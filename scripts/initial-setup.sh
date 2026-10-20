@@ -1,5 +1,5 @@
 # Install dependencies
-composer install
+./scripts/composer.sh install
 pnpm install
 
 # Build assets

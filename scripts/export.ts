@@ -19,9 +19,33 @@ const filesToInclude = [
 	"src/core/",
 	"src/templates/",
 	"vendor/",
+	"composer.json",
 	"pagbank-for-woocommerce.php",
 	"readme.txt",
 ];
+
+/**
+ * Composer leaves temporary downloads (tmp-*.zip, tmp-*.zip~) and extraction
+ * folders inside vendor/composer/ when an install is interrupted. Composer
+ * itself only writes plain files there, so any subfolder is a leftover.
+ */
+const isComposerLeftover = (filePath: string): boolean => {
+	if (!filePath.startsWith("vendor/composer/")) {
+		return false;
+	}
+
+	const relative = filePath.slice("vendor/composer/".length);
+
+	return relative.includes("/") || relative.startsWith("tmp-");
+};
+
+/**
+ * Dependencies ship their own tooling: dotfiles (.gitignore, .php-cs-fixer.dist.php,
+ * .phpstorm.meta.php) and CLI proxies in vendor/bin/ that nothing loads at runtime.
+ */
+const isDevelopmentFile = (filePath: string): boolean =>
+	filePath.split("/").some((segment) => segment.startsWith(".")) ||
+	filePath.startsWith("vendor/bin/");
 
 const getEntries = (dir: string): string[] => {
 	if (!Fs.existsSync(dir)) {
@@ -65,7 +89,10 @@ async function createZip() {
 		const filePath = file.slice(rootDir.length + 1);
 
 		// Check if file should be included
-		const shouldInclude = filesToInclude.some((include) => filePath.startsWith(include));
+		const shouldInclude =
+			!isDevelopmentFile(filePath) &&
+			!isComposerLeftover(filePath) &&
+			filesToInclude.some((include) => filePath.startsWith(include));
 
 		if (shouldInclude) {
 			folder.file(filePath, Fs.readFileSync(file));

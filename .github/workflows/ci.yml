@@ -1,0 +1,264 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Changes reach a vX.Y.Z release branch from a typed branch (feat/..., fix/...) or Renovate,
+  # and only a release branch reaches the default branch. Rulesets on this plan cannot match the source branch.
+  branch-name:
+    name: Branch name
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          HEAD: ${{ github.head_ref }}
+          BASE: ${{ github.base_ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          release='^v[0-9]+\.[0-9]+\.[0-9]+$'
+          typed='^((feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/[a-z0-9][a-z0-9._-]*|renovate/.+)$'
+          if [ "$BASE" = "$DEFAULT_BRANCH" ]; then
+            allowed=$release expected="a release branch (vX.Y.Z)"
+          elif [[ $BASE =~ $release ]]; then
+            allowed=$typed expected="<type>/<name>, e.g. feat/pix-refunds or fix/boleto-email"
+          else
+            exit 0
+          fi
+          if [[ ! $HEAD =~ $allowed ]]; then
+            echo "::error::Pull requests into $BASE must come from $expected, not $HEAD."
+            exit 1
+          fi
+
+  phpcs:
+    name: PHP coding standards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+        with:
+          tools: cs2pr
+      # PHPCS skips files whose content and ruleset are unchanged since the cached run.
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/phpcs.cache
+          key: phpcs-${{ hashFiles('.phpcs.xml', 'composer.lock') }}-${{ github.sha }}
+          restore-keys: phpcs-${{ hashFiles('.phpcs.xml', 'composer.lock') }}-
+      # Warnings are annotated on the PR but only errors fail the job.
+      - run: >-
+          vendor/bin/phpcs -q --report=checkstyle --cache="$RUNNER_TEMP/phpcs.cache"
+          --runtime-set ignore_warnings_on_exit 1 | cs2pr --graceful-warnings
+
+  phpstan:
+    name: PHP static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+      # Result cache under PHPStan's default tmpDir (sys_get_temp_dir()/phpstan); it invalidates itself on config changes.
+      - uses: actions/cache@v6
+        with:
+          path: /tmp/phpstan
+          key: phpstan-${{ hashFiles('composer.lock') }}-${{ github.sha }}
+          restore-keys: phpstan-${{ hashFiles('composer.lock') }}-
+      - run: php -d memory_limit=2G vendor/bin/phpstan analyse --no-progress --error-format=github
+
+  phpunit:
+    name: PHP tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every version the plugin header and composer.json accept.
+        php: ["7.4", "8.0", "8.1", "8.2", "8.3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+        with:
+          php-version: ${{ matrix.php }}
+      - run: vendor/bin/phpunit
+
+  ui:
+    name: UI lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-node
+      - run: pnpm exec biome ci src scripts
+      - run: pnpm exec tsc
+
+  commits:
+    name: Conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node
+      - name: Lint commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+      # A squash merge turns the PR title into the commit message on main.
+      - name: Lint pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | pnpm exec commitlint --verbose
+
+  package:
+    name: Plugin package
+    runs-on: ubuntu-latest
+    outputs:
+      zip: ${{ steps.zip.outputs.name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-php
+        with:
+          composer-options: --no-dev --optimize-autoloader
+          tools: wp-cli
+      - uses: ./.github/actions/setup-node
+
+      - name: Check version consistency
+        run: pnpm check:version
+
+      - name: Build assets
+        run: pnpm exec tsx scripts/build-ui.ts
+
+      # The template also indexes the built JS, so it can only be compared after the build.
+      # Source references are ignored: they shift with every PHP edit without changing what translators see.
+      - name: Check translation template is up to date
+        run: |
+          pot=languages/pagbank-for-woocommerce.pot
+          wp i18n make-pot . "$RUNNER_TEMP/fresh.pot" --exclude=vendor,wp --slug=pagbank-for-woocommerce --domain=pagbank-for-woocommerce --allow-root
+          strip_volatile() { grep -vE '^(#: |# Copyright|"POT-Creation-Date: |"X-Generator: )' "$1"; }
+          if ! diff -u <(strip_volatile "$pot") <(strip_volatile "$RUNNER_TEMP/fresh.pot"); then
+            echo "::error file=$pot::Translation template is outdated. Run pnpm make:pot and commit the result."
+            exit 1
+          fi
+
+      - name: Create zip
+        id: zip
+        run: |
+          pnpm exec tsx scripts/export.ts
+          echo "name=$(basename build/pagbank-for-woocommerce-*.zip)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify zip contents
+        run: pnpm exec tsx scripts/verify-export.ts
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: build/pagbank-for-woocommerce-*.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+  plugin-check:
+    name: Plugin Check
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.zip }}
+          path: release
+          skip-decompress: true
+      - run: unzip -q "release/$ZIP" -d "$RUNNER_TEMP/plugin"
+        env:
+          ZIP: ${{ needs.package.outputs.zip }}
+      - uses: WordPress/plugin-check-action@v1
+        with:
+          build-dir: ${{ runner.temp }}/plugin/pagbank-for-woocommerce
+          # The PR comment needs pull-requests: write, which the release workflow does not grant when it calls CI.
+          repo-token: ""
+          # readme.txt is written in Portuguese for the Brazilian stores the plugin serves.
+          ignore-codes: |
+            readme_short_description_non_official_language
+            readme_description_non_official_language
+
+  smoke-test:
+    name: Smoke test (${{ matrix.stack }})
+    needs: package
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest stack the plugin header accepts, and the current releases.
+        include:
+          - stack: oldest
+            php: "7.4"
+            wordpress: '"https://wordpress.org/wordpress-6.7.zip"'
+            woocommerce: https://downloads.wordpress.org/plugin/woocommerce.9.9.0.zip
+          - stack: latest
+            php: "8.3"
+            wordpress: "null"
+            woocommerce: woocommerce
+    env:
+      WP_ENV_VERSION: 12.0.0
+      SITE: ${{ github.workspace }}/../site
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.zip }}
+          path: release
+          skip-decompress: true
+
+      - name: Prepare the site
+        env:
+          ZIP: ${{ needs.package.outputs.zip }}
+          PHP: ${{ matrix.php }}
+          CORE: ${{ matrix.wordpress }}
+        run: |
+          mkdir -p "$SITE"
+          unzip -q "release/$ZIP" -d "$SITE"
+          jq -n --arg php "$PHP" --argjson core "$CORE" '{
+            core: $core,
+            phpVersion: $php,
+            testsEnvironment: false,
+            mappings: { "wp-content/plugins/pagbank-for-woocommerce": "./pagbank-for-woocommerce" },
+            config: {
+              WP_DEBUG_LOG: true,
+              WP_DEBUG_DISPLAY: false,
+              PAGBANK_FEATURE_FLAG_GOOGLE_PAY_ENABLED: true,
+              PAGBANK_FEATURE_FLAG_APPLE_PAY_ENABLED: true
+            }
+          }' > "$SITE/.wp-env.json"
+
+      # Building the wp-env images downloads PHPUnit from Packagist, which times out now and then.
+      - name: Start WordPress
+        run: |
+          cd "$SITE"
+          for attempt in 1 2 3; do
+            npx --yes "@wordpress/env@$WP_ENV_VERSION" start && exit 0
+            echo "::warning::wp-env failed to start (attempt $attempt)"
+          done
+          exit 1
+
+      # Installed through WP-CLI so the folder is named woocommerce, which Requires Plugins looks for.
+      # A pinned release comes as a zip URL: wp-env run takes --version as its own flag and drops it.
+      - name: Install WooCommerce and activate the plugin
+        env:
+          WOOCOMMERCE: ${{ matrix.woocommerce }}
+        run: |
+          cd "$SITE"
+          wp() { npx --yes "@wordpress/env@$WP_ENV_VERSION" run cli wp "$@"; }
+          wp plugin install "$WOOCOMMERCE" --activate
+          wp plugin activate pagbank-for-woocommerce
+
+      - name: Run the smoke test
+        run: cd "$SITE" && "$GITHUB_WORKSPACE/scripts/smoke-test.sh"

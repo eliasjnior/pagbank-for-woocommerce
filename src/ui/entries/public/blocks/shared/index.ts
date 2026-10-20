@@ -12,6 +12,7 @@ export * from "./constants";
 export type { ThreeDSAuthenticateParams, ThreeDSResult, ThreeDSStatus } from "./hooks/use3DS";
 // Hooks
 export { use3DS } from "./hooks/use3DS";
+export { useSubmissionId } from "./hooks/useSubmissionId";
 // Types
 export * from "./types";
 // Utils

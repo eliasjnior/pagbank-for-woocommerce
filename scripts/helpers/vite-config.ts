@@ -1,4 +1,4 @@
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BuildOptions } from "vite";
 
@@ -49,6 +49,7 @@ export const entries: Record<string, string> = {
 	"public/order-received/payment-instructions":
 		"src/ui/entries/public/order-received/payment-instructions/index.tsx",
 	"public/legacy/checkout-credit-card": "src/ui/entries/public/legacy/checkout-credit-card.ts",
+	"public/legacy/checkout-submission": "src/ui/entries/public/legacy/checkout-submission.ts",
 	"public/legacy/checkout-fields": "src/ui/entries/public/legacy/checkout-fields.ts",
 	"public/blocks/checkout-fields": "src/ui/entries/public/blocks/checkout-fields.ts",
 	"public/blocks/checkout-boleto": "src/ui/entries/public/blocks/checkout-boleto/index.tsx",
@@ -140,6 +141,11 @@ export function getEntryBuildConfig(name: string, entry: string, options: BuildC
 			},
 		} satisfies BuildOptions,
 	};
+}
+
+// Partials only exist to be pulled in with @use; compiled on their own they ship as stray CSS.
+export function isScssPartial(path: string): boolean {
+	return basename(path).startsWith("_");
 }
 
 export function getScssBuildConfig(scssFile: string, options: BuildConfigOptions = {}) {

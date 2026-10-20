@@ -2,13 +2,13 @@
 Contributors: eliasjnior
 Tags: woocommerce, pagseguro, pagbank, pagamento, brasil
 Requires at least: 6.7
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPLv2
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Aceite pagamentos via cartão de crédito, cartão de débito, Pix, boleto e redirecionamento (Pagar com PagBank e Checkout PagBank) no WooCommerce através do PagBank.
+Aceite pagamentos via cartão de crédito, cartão de débito, Pix, boleto e redirecionamento (Pagar com PagBank e Checkout PagBank) no WooCommerce.
 
 == Description ==
 
@@ -122,9 +122,9 @@ Para que os métodos de pagamento tenham o correto funcionamento, durante o chec
 
 Para instalar o PagBank for WooCommerce, você precisa:
 
-* WordPress versão 5.4 ou superior (instalado)
-* WooCommerce versão 3.9 ou superior (instalado e ativado)
-* PHP versão 7.4 ou superior
+* WordPress versão 6.7 ou superior (instalado)
+* WooCommerce versão 9.9 ou superior (instalado e ativado)
+* PHP versão 7.4 a 8.3
 * Conta no PagBank ([cadastre-se](https://cadastro.pagseguro.uol.com.br/))
 * Compatível com o checkout clássico (shortcode) e com o WooCommerce Checkout Blocks
 
@@ -286,3 +286,16 @@ Caso o lojista não possua o identificador da conta preenchido, os produtos cada
 * Corrigido indicador de campo obrigatório duplicado no checkout clássico.
 * Corrigido cálculo do total no Checkout PagBank, incluindo o frete corretamente.
 * Melhorado registro de logs da API, mantendo o reference_id para facilitar o rastreamento.
+
+= 2.0.3 - 2026-09-27 =
+* Adicionado análise de risco (antifraude) nos pagamentos com Pix, mantendo o pedido aguardando confirmação enquanto a análise ocorre.
+* Adicionado filtro `pagbank_payment_instructions_email_ids`, que permite a outros plugins exibir as instruções de Pix e boleto em seus próprios e-mails.
+* Melhorado a robustez da página de confirmação do pedido diante de mudanças internas do WooCommerce.
+* Corrigido diversos problemas no checkout, nos pagamentos e nas renovações de assinatura.
+* Corrigido problemas no envio dos e-mails do pedido.
+* Corrigido exposição do token de acesso nos logs de depuração.
+* Corrigido a tela de configuração dos métodos de pagamento.
+* Corrigido compatibilidade com a Calculadora de Frete e Campos Checkout para o Brasil.
+* Corrigido layout.
+* Corrigido versão mínima do WooCommerce declarada pelo plugin.
+* Atualizado a compatibilidade declarada para WordPress 7.1 e WooCommerce 11.0.

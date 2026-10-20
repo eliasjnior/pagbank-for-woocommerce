@@ -252,6 +252,15 @@ class AddressFormatting {
 			return;
 		}
 
+		// `deregister_checkout_field()` is marked @internal in WooCommerce, and
+		// there is no public equivalent for address-location fields: the frontend
+		// renders them through CheckoutFieldsFrontend::render_order_address_fields(),
+		// which never runs `woocommerce_filter_fields_for_order_confirmation`.
+		// Degrade to showing the rows rather than fataling if it ever goes away.
+		if ( ! method_exists( $checkout_fields, 'deregister_checkout_field' ) ) {
+			return;
+		}
+
 		foreach ( self::CONFIRMATION_HIDDEN_FIELD_IDS as $field_id ) {
 			$checkout_fields->deregister_checkout_field( $field_id );
 		}

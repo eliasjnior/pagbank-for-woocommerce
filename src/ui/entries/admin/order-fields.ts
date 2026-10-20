@@ -8,9 +8,8 @@
  * toggled). The interop ids are only masked when the document group is ours —
  * when the Brazilian Market plugin provides it, its own masks apply.
  *
- * The cellphone field is intentionally not masked: it stores the
- * international format ("+55 27 98169-1098"), which the local checkout mask
- * would mangle.
+ * The cellphone field is intentionally not masked: it is already stored in
+ * the national format the mask would produce.
  */
 
 import {

@@ -205,35 +205,63 @@ class ApiHelpers {
 
 		return array(
 			'name'   => self::sanitize_pagbank_name( $name ),
-			'email'  => $order->get_billing_email(),
+			'email'  => self::sanitize_pagbank_email( $order->get_billing_email() ),
 			'tax_id' => self::get_order_tax_id_api_data( $order ),
 		);
 	}
 
 	/**
+	 * POST field carrying the per-submission identifier.
+	 *
+	 * The Blocks checkout sends it through `paymentMethodData`, which
+	 * WooCommerce copies into `$_POST` before calling `process_payment()`
+	 * (see `StoreApi\Legacy::process_legacy_payment`), so both checkouts
+	 * read it from the same place.
+	 */
+	public const SUBMISSION_ID_FIELD = 'pagbank_submission_id';
+
+	/**
+	 * Read the submission identifier sent by the checkout, if any.
+	 *
+	 * Absent on flows with no browser submit (subscription renewals,
+	 * admin-created orders), where the owning order ID already scopes the
+	 * idempotency key.
+	 */
+	public static function get_request_submission_id(): ?string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only; the checkout verifies its own nonce.
+		if ( ! isset( $_POST[ self::SUBMISSION_ID_FIELD ] ) ) {
+			return null;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only; the checkout verifies its own nonce.
+		$submission_id = wc_clean( wp_unslash( $_POST[ self::SUBMISSION_ID_FIELD ] ) );
+
+		return is_string( $submission_id ) && '' !== $submission_id ? $submission_id : null;
+	}
+
+	/**
 	 * Compute an idempotency key for a create-order request.
 	 *
-	 * Scoped to a single WC order and a single 3DS authentication: two
-	 * parallel processings of the same order (e.g. a network glitch causing
-	 * a double-submit) collide and PagBank dedupes them, but a legitimate
-	 * retry — which produces a new WC order, or at least a fresh 3DS ID —
-	 * gets a new key and is accepted.
+	 * Keyed on the submission identifier the checkout generates per attempt, so
+	 * resending one attempt dedupes while a deliberate retry is accepted. The
+	 * order ID cannot do this: a declined payment keeps the same WC order, so
+	 * retries reused the key while the body shifted underneath them (fresh
+	 * encrypted blob, new Pix expiration, different `store` flag) and PagBank
+	 * answered IDEMPOTENCY_CONFLICT.
 	 *
-	 * Previously the key was a hash of cart shape (email + tax_id + amount
-	 * + type + items) so two distinct WC orders for the same cart shared a
-	 * key, and PagBank rejected the second attempt with
-	 * IDEMPOTENCY_CONFLICT whenever the request body shifted (different
-	 * 3DS ID, different shipping locality, new encrypted blob, etc).
+	 * Without an identifier the payload itself stands in, which keeps retries
+	 * working when the checkout script is stale. Deterministic payloads (a
+	 * renewal charging a stored card) still hash the same, so a re-run cron
+	 * cannot charge twice.
 	 *
-	 * The card encrypted blob is still intentionally excluded because
-	 * RSA-OAEP produces a different ciphertext on every call.
-	 *
-	 * @param array    $data     The create-order payload.
-	 * @param int|null $order_id Owning WC order ID.
+	 * @param array       $data          The create-order payload.
+	 * @param int|null    $order_id      Owning WC order ID.
+	 * @param string|null $submission_id Per-submission identifier from the checkout.
 	 */
-	public static function get_create_order_idempotency_key( array $data, ?int $order_id = null ): string {
+	public static function get_create_order_idempotency_key( array $data, ?int $order_id = null, ?string $submission_id = null ): string {
 		$parts = array(
 			(string) ( $order_id ?? '' ),
+			(string) ( $submission_id ?? '' ),
 			$data['customer']['email'] ?? '',
 			$data['customer']['tax_id']['value'] ?? '',
 			(string) ( $data['charges'][0]['amount']['value'] ?? '' ),
@@ -241,6 +269,10 @@ class ApiHelpers {
 			$data['charges'][0]['payment_method']['authentication_method']['id'] ?? '',
 			(string) wp_json_encode( $data['items'] ?? array() ),
 		);
+
+		if ( null === $submission_id ) {
+			$parts[] = (string) wp_json_encode( $data );
+		}
 
 		return md5( implode( '|', $parts ) );
 	}
@@ -265,6 +297,17 @@ class ApiHelpers {
 		$cleaned = is_string( $cleaned ) ? preg_replace( '/\s+/', ' ', $cleaned ) : $name;
 
 		return trim( is_string( $cleaned ) ? $cleaned : $name );
+	}
+
+	/**
+	 * Normalize an e-mail address for the PagBank API.
+	 *
+	 * The boleto `holder.email` rejects the whole order with 40002 on any
+	 * capital letter, while `customer.email` accepts the same address. Only
+	 * the payload is normalized; the stored order e-mail keeps its casing.
+	 */
+	public static function sanitize_pagbank_email( string $email ): string {
+		return strtolower( trim( $email ) );
 	}
 
 	/**
@@ -385,12 +428,18 @@ class ApiHelpers {
 			'shipping'          => array(
 				'address' => self::get_order_shipping_address_api_data( $order ),
 			),
-			'qr_codes'          => array(
+			'charges'           => array(
 				array(
-					'amount'          => array(
-						'value' => Helpers::format_money_cents( $order->get_total() ),
+					'reference_id'   => self::get_order_reference_id_data( $order ),
+					// translators: %1$s: order id, %2$s: blog name.
+					'description'    => sprintf( __( 'Pedido %1$s - %2$s', 'pagbank-for-woocommerce' ), $order->get_id(), get_bloginfo( 'name' ) ),
+					'amount'         => self::get_order_amount_api_data( $order ),
+					'payment_method' => array(
+						'type' => 'PIX',
+						'pix'  => array(
+							'expiration_date' => Carbon::now()->addMinutes( $expiration_in_minutes )->toAtomString(),
+						),
 					),
-					'expiration_date' => Carbon::now()->addMinutes( $expiration_in_minutes )->toAtomString(),
 				),
 			),
 			'notification_urls' => array(
@@ -399,6 +448,28 @@ class ApiHelpers {
 		);
 
 		return apply_filters( 'pagbank_pix_payment_data', $data, $order, $gateway );
+	}
+
+	/**
+	 * Find a charge link href by its relation type.
+	 *
+	 * The Pix charge response returns multiple links (e.g. QRCODE.PNG,
+	 * QRCODE.BASE64, JSR_BIOMETRIC_PIX), so the link must be selected by its
+	 * `rel` instead of a fixed index.
+	 *
+	 * @param array  $links The charge `links` array.
+	 * @param string $rel   The relation type to look for (e.g. QRCODE.PNG).
+	 *
+	 * @return string The matching href, or an empty string when not found.
+	 */
+	public static function find_charge_link_href( array $links, string $rel ): string {
+		foreach ( $links as $link ) {
+			if ( isset( $link['rel'], $link['href'] ) && $link['rel'] === $rel ) {
+				return $link['href'];
+			}
+		}
+
+		return '';
 	}
 
 	/**
@@ -597,7 +668,7 @@ class ApiHelpers {
 							'holder'            => array(
 								'name'    => self::sanitize_pagbank_name( $order->get_formatted_billing_full_name() ),
 								'tax_id'  => self::get_order_tax_id_api_data( $order ),
-								'email'   => $order->get_billing_email(),
+								'email'   => self::sanitize_pagbank_email( $order->get_billing_email() ),
 								'address' => self::get_order_billing_address_api_data( $order ),
 							),
 						),

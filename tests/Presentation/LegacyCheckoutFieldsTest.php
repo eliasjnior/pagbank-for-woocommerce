@@ -69,9 +69,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 */
 	public function test_insert_billing_fields_adds_all_fields(): void {
 		$provides = array(
-			'document'  => false,
-			'address'   => false,
-			'cellphone' => false,
+			'document'     => false,
+			'number'       => false,
+			'neighborhood' => false,
+			'cellphone'    => false,
 		);
 
 		$fields = LegacyCheckoutFields::insert_billing_fields( array(), $provides, true );
@@ -114,9 +115,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 */
 	public function test_insert_billing_fields_adjusts_company_field(): void {
 		$provides = array(
-			'document'  => false,
-			'address'   => true,
-			'cellphone' => true,
+			'document'     => false,
+			'number'       => true,
+			'neighborhood' => true,
+			'cellphone'    => true,
 		);
 
 		$existing = array(
@@ -143,9 +145,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 */
 	public function test_insert_billing_fields_creates_company_field_when_missing(): void {
 		$provides = array(
-			'document'  => false,
-			'address'   => true,
-			'cellphone' => true,
+			'document'     => false,
+			'number'       => true,
+			'neighborhood' => true,
+			'cellphone'    => true,
 		);
 
 		$fields = LegacyCheckoutFields::insert_billing_fields( array(), $provides, true );
@@ -171,9 +174,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 		$fields = LegacyCheckoutFields::insert_billing_fields(
 			array( 'billing_company' => $company ),
 			array(
-				'document'  => true,
-				'address'   => true,
-				'cellphone' => true,
+				'document'     => true,
+				'number'       => true,
+				'neighborhood' => true,
+				'cellphone'    => true,
 			),
 			true
 		);
@@ -186,9 +190,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 				'billing_persontype' => array( 'label' => 'Custom' ),
 			),
 			array(
-				'document'  => false,
-				'address'   => true,
-				'cellphone' => true,
+				'document'     => false,
+				'number'       => true,
+				'neighborhood' => true,
+				'cellphone'    => true,
 			),
 			true
 		);
@@ -200,9 +205,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 */
 	public function test_insert_billing_fields_respects_required_flag(): void {
 		$provides = array(
-			'document'  => false,
-			'address'   => false,
-			'cellphone' => false,
+			'document'     => false,
+			'number'       => false,
+			'neighborhood' => false,
+			'cellphone'    => false,
 		);
 
 		$fields = LegacyCheckoutFields::insert_billing_fields( array(), $provides, false );
@@ -217,9 +223,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 */
 	public function test_insert_billing_fields_skips_provided_groups(): void {
 		$provides = array(
-			'document'  => true,
-			'address'   => true,
-			'cellphone' => false,
+			'document'     => true,
+			'number'       => true,
+			'neighborhood' => true,
+			'cellphone'    => false,
 		);
 
 		$fields = LegacyCheckoutFields::insert_billing_fields( array(), $provides, true );
@@ -237,9 +244,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 */
 	public function test_insert_billing_fields_adds_nothing_when_all_provided(): void {
 		$provides = array(
-			'document'  => true,
-			'address'   => true,
-			'cellphone' => true,
+			'document'     => true,
+			'number'       => true,
+			'neighborhood' => true,
+			'cellphone'    => true,
 		);
 
 		$existing = array(
@@ -255,9 +263,10 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 */
 	public function test_insert_billing_fields_never_overwrites_existing_fields(): void {
 		$provides = array(
-			'document'  => false,
-			'address'   => false,
-			'cellphone' => false,
+			'document'     => false,
+			'number'       => false,
+			'neighborhood' => false,
+			'cellphone'    => false,
 		);
 
 		$existing_number = array(
@@ -280,17 +289,17 @@ class LegacyCheckoutFieldsTest extends TestCase {
 	 * address fields, and never overwrite existing entries.
 	 */
 	public function test_insert_shipping_fields(): void {
-		$fields = LegacyCheckoutFields::insert_shipping_fields( array(), false, true );
+		$fields = LegacyCheckoutFields::insert_shipping_fields( array(), self::shipping_provides( false ), true );
 
 		$this->assertArrayHasKey( 'shipping_number', $fields );
 		$this->assertArrayHasKey( 'shipping_neighborhood', $fields );
 		$this->assertSame( 55, $fields['shipping_number']['priority'] );
 		$this->assertSame( 56, $fields['shipping_neighborhood']['priority'] );
 
-		$this->assertSame( array(), LegacyCheckoutFields::insert_shipping_fields( array(), true, true ) );
+		$this->assertSame( array(), LegacyCheckoutFields::insert_shipping_fields( array(), self::shipping_provides( true ), true ) );
 
 		$existing = array( 'shipping_number' => array( 'label' => 'Custom' ) );
-		$result   = LegacyCheckoutFields::insert_shipping_fields( $existing, false, true );
+		$result   = LegacyCheckoutFields::insert_shipping_fields( $existing, self::shipping_provides( false ), true );
 		$this->assertSame( $existing['shipping_number'], $result['shipping_number'] );
 	}
 
@@ -344,5 +353,184 @@ class LegacyCheckoutFieldsTest extends TestCase {
 
 		$this->assertSame( '062.556.385-96', $data['billing_cpf'] );
 		$this->assertSame( '', $data['billing_cnpj'] );
+	}
+
+	/**
+	 * LinkNacional gates the number and neighborhood fields behind settings that
+	 * default to 'no', so its mere presence must not suppress ours: that gap is
+	 * how an address could reach PagBank without a number.
+	 *
+	 * @dataProvider linknacional_provides_provider
+	 */
+	public function test_resolve_provides_for_linknacional( array $state, array $expected ): void {
+		$this->assertSame( $expected, LegacyCheckoutFields::resolve_provides( $state ) );
+	}
+
+	public function linknacional_provides_provider(): array {
+		$base = array(
+			'brazilian_market'          => false,
+			'brazilian_market_settings' => null,
+			'linknacional'              => true,
+		);
+
+		return array(
+			'defaults: only the cellphone role is covered'       => array(
+				$base + array(
+					'linknacional_person_type'  => 'none',
+					'linknacional_number'       => 'no',
+					'linknacional_neighborhood' => 'no',
+				),
+				array(
+					'document'     => false,
+					'number'       => false,
+					'neighborhood' => false,
+					'cellphone'    => true,
+				),
+			),
+			'person type on, address options off'               => array(
+				$base + array(
+					'linknacional_person_type'  => 'both',
+					'linknacional_number'       => 'no',
+					'linknacional_neighborhood' => 'no',
+				),
+				array(
+					'document'     => true,
+					'number'       => false,
+					'neighborhood' => false,
+					'cellphone'    => true,
+				),
+			),
+			'number on, neighborhood off'                       => array(
+				$base + array(
+					'linknacional_person_type'  => 'none',
+					'linknacional_number'       => 'yes',
+					'linknacional_neighborhood' => 'no',
+				),
+				array(
+					'document'     => false,
+					'number'       => true,
+					'neighborhood' => false,
+					'cellphone'    => true,
+				),
+			),
+			'everything on'                                     => array(
+				$base + array(
+					'linknacional_person_type'  => 'physical',
+					'linknacional_number'       => 'yes',
+					'linknacional_neighborhood' => 'yes',
+				),
+				array(
+					'document'     => true,
+					'number'       => true,
+					'neighborhood' => true,
+					'cellphone'    => true,
+				),
+			),
+			'inactive plugin covers nothing'                    => array(
+				array(
+					'brazilian_market'          => false,
+					'brazilian_market_settings' => null,
+					'linknacional'              => false,
+					'linknacional_person_type'  => 'both',
+					'linknacional_number'       => 'yes',
+					'linknacional_neighborhood' => 'yes',
+				),
+				array(
+					'document'     => false,
+					'number'       => false,
+					'neighborhood' => false,
+					'cellphone'    => false,
+				),
+			),
+		);
+	}
+
+	/**
+	 * Brazilian Market adds the number and neighborhood unconditionally, while
+	 * the document and cellphone groups follow its own settings.
+	 */
+	public function test_resolve_provides_for_brazilian_market(): void {
+		$state = array(
+			'brazilian_market'          => true,
+			'brazilian_market_settings' => array(
+				'person_type' => 0,
+				'cell_phone'  => '0',
+			),
+			'linknacional'              => false,
+		);
+
+		$this->assertSame(
+			array(
+				'document'     => false,
+				'number'       => true,
+				'neighborhood' => true,
+				'cellphone'    => false,
+			),
+			LegacyCheckoutFields::resolve_provides( $state )
+		);
+
+		$state['brazilian_market_settings'] = array(
+			'person_type' => 1,
+			'cell_phone'  => '-1',
+		);
+
+		$this->assertSame(
+			array(
+				'document'     => true,
+				'number'       => true,
+				'neighborhood' => true,
+				'cellphone'    => true,
+			),
+			LegacyCheckoutFields::resolve_provides( $state )
+		);
+	}
+
+	/**
+	 * The number and neighborhood are inserted independently, so a plugin that
+	 * only covers one of them still leaves the other to us.
+	 */
+	public function test_insert_billing_fields_splits_address_groups(): void {
+		$fields = LegacyCheckoutFields::insert_billing_fields(
+			array(),
+			array(
+				'document'     => true,
+				'number'       => true,
+				'neighborhood' => false,
+				'cellphone'    => true,
+			),
+			true
+		);
+
+		$this->assertArrayNotHasKey( 'billing_number', $fields );
+		$this->assertArrayHasKey( 'billing_neighborhood', $fields );
+	}
+
+	/**
+	 * Same split on the shipping side.
+	 */
+	public function test_insert_shipping_fields_splits_address_groups(): void {
+		$fields = LegacyCheckoutFields::insert_shipping_fields(
+			array(),
+			array(
+				'number'       => false,
+				'neighborhood' => true,
+			),
+			true
+		);
+
+		$this->assertArrayHasKey( 'shipping_number', $fields );
+		$this->assertArrayNotHasKey( 'shipping_neighborhood', $fields );
+	}
+
+	/**
+	 * Build the shipping provides map used by insert_shipping_fields().
+	 *
+	 * @param bool $provided Whether both address groups come from a third party.
+	 */
+	private static function shipping_provides( bool $provided ): array {
+		return array(
+			'number'       => $provided,
+			'neighborhood' => $provided,
+		);
 	}
 }

@@ -119,3 +119,9 @@ export const calculateFixedInstallmentPlans = (
 
 	return plans;
 };
+
+/**
+ * Mirror of ApiHelpers::sanitize_pagbank_email (PHP). PagBank rejects e-mails
+ * with capital letters on some parameters.
+ */
+export const sanitizePagBankEmail = (email: string): string => email.trim().toLowerCase();

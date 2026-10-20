@@ -18,6 +18,7 @@ use PagBank_WooCommerce\Gateways\Traits\ReactSettingsTrait;
 use PagBank_WooCommerce\Presentation\Api;
 use PagBank_WooCommerce\Presentation\ApiHelpers;
 use PagBank_WooCommerce\Presentation\Connect;
+use PagBank_WooCommerce\Presentation\Helpers;
 use WC_Order;
 use WC_Payment_Gateway;
 use WP_Error;
@@ -181,10 +182,10 @@ class CheckoutPaymentGateway extends WC_Payment_Gateway {
 			$return_url = $this->get_return_url( $order );
 
 			$data     = ApiHelpers::get_checkout_api_data( $this, $order, $this->expiration_minutes, $return_url );
-			$response = $this->api->create_checkout( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id() ) );
+			$response = $this->api->create_checkout( $data, ApiHelpers::get_create_order_idempotency_key( $data, $order->get_id(), ApiHelpers::get_request_submission_id() ) );
 
 			if ( is_wp_error( $response ) ) {
-				wc_add_notice( __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ), 'error' );
+				Helpers::add_payment_error_notice( __( 'Houve um erro ao processar o pagamento. Tente novamente.', 'pagbank-for-woocommerce' ) );
 
 				return array(
 					'result'  => 'failure',
@@ -202,7 +203,7 @@ class CheckoutPaymentGateway extends WC_Payment_Gateway {
 			$checkout_url = $this->get_checkout_redirect_url( $response );
 
 			if ( ! $checkout_url ) {
-				wc_add_notice( __( 'Não foi possível obter a URL de checkout. Tente novamente.', 'pagbank-for-woocommerce' ), 'error' );
+				Helpers::add_payment_error_notice( __( 'Não foi possível obter a URL de checkout. Tente novamente.', 'pagbank-for-woocommerce' ) );
 
 				return array(
 					'result'  => 'failure',
@@ -221,7 +222,7 @@ class CheckoutPaymentGateway extends WC_Payment_Gateway {
 				'redirect' => $checkout_url,
 			);
 		} catch ( Exception $e ) {
-			wc_add_notice( $e->getMessage(), 'error' );
+			Helpers::add_payment_error_notice( $e->getMessage() );
 
 			return array(
 				'result'  => 'failure',
