@@ -14,6 +14,32 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Changes reach a vX.Y.Z release branch from a typed branch (feat/..., fix/...) or Renovate,
+  # and only a release branch reaches the default branch. Rulesets on this plan cannot match the source branch.
+  branch-name:
+    name: Branch name
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          HEAD: ${{ github.head_ref }}
+          BASE: ${{ github.base_ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          release='^v[0-9]+\.[0-9]+\.[0-9]+$'
+          typed='^((feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/[a-z0-9][a-z0-9._-]*|renovate/.+)$'
+          if [ "$BASE" = "$DEFAULT_BRANCH" ]; then
+            allowed=$release expected="a release branch (vX.Y.Z)"
+          elif [[ $BASE =~ $release ]]; then
+            allowed=$typed expected="<type>/<name>, e.g. feat/pix-refunds or fix/boleto-email"
+          else
+            exit 0
+          fi
+          if [[ ! $HEAD =~ $allowed ]]; then
+            echo "::error::Pull requests into $BASE must come from $expected, not $HEAD."
+            exit 1
+          fi
+
   phpcs:
     name: PHP coding standards
     runs-on: ubuntu-latest

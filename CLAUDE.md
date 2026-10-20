@@ -233,6 +233,7 @@ that proves the contract is loose.
 
 - PHPCS (errors fail, warnings are annotated), PHPStan, PHPUnit on PHP 7.4–8.3, Biome, `tsc`
 - commitlint on every commit and on the PR title, which becomes the squash commit on `main`; commit body lines are limited to 100 characters
+- Branch name: pull requests into a `vX.Y.Z` release branch must come from `<type>/<name>` (Conventional Commits types, lowercase) or `renovate/...`, and pull requests into `main` only from a `vX.Y.Z` branch. Name new branches that way
 - Package: `check:version`, a production build, the `.pot` compared with a fresh `make-pot` (source references ignored, so only string changes matter), then the zip and its verification
 - Plugin Check on the zip. It also scans `src/templates/`, which `.phpcs.xml` leaves out
 - Smoke test on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and the latest one
@@ -243,7 +244,7 @@ What this means when changing code:
 - A new gateway needs its id in `GATEWAYS` in `scripts/smoke-test.sh`; a new enqueued asset must be produced by the build
 - Do not bump versions by hand; `pnpm bump` also fixes the `composer.lock` content-hash, which depends on the `composer.json` version
 
-Releases: bump on a `vX.Y.Z` branch, write the `readme.txt` changelog entry, merge into `main`, then run the **Release** workflow from `main`. It tags `X.Y.Z` (no `v`, matching the WordPress.org SVN tags and avoiding clashes with release branches) and publishes the zip with a build provenance attestation and the changelog entry as notes.
+Releases: create `vX.Y.Z` from `main`, bump and write the `readme.txt` changelog entry on a `chore/` branch merged into it, merge `vX.Y.Z` into `main`, then run the **Release** workflow from `main`. It tags `X.Y.Z` (no `v`, matching the WordPress.org SVN tags and avoiding clashes with release branches) and publishes the zip with a build provenance attestation and the changelog entry as notes.
 
 ## WooCommerce Integration Points
 
