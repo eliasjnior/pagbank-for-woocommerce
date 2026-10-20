@@ -43,6 +43,23 @@ pnpm run setup
 
 The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`.
 
+### Parallel worktrees
+
+Each git worktree runs its own stack, with its own WordPress in `wp/`, database volume and ports, so several branches (or several AI agents) can work at once without touching each other. In a worktree, `pnpm run setup` first runs `pnpm worktree:env`, which reserves a free slot of host ports and writes them to `.env`:
+
+```bash
+git worktree add ../pagbank-for-woocommerce.my-branch -b feat/my-branch
+cd ../pagbank-for-woocommerce.my-branch
+pnpm install
+pnpm worktree:env   # prints the WordPress, phpMyAdmin and Mailpit URLs
+docker compose up -d
+pnpm run setup
+```
+
+The main checkout has no `.env` and keeps the URLs above. Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot. Xdebug is off in worktrees: set `XDEBUG_MODE=debug` in `.env` and use `XDEBUG_PORT` as the port in `.vscode/launch.json`.
+
+With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` installs the dependencies and writes `.env` when `wt switch --create` makes the worktree, and `wt remove` stops the stack and deletes its database volume.
+
 ## Commands
 
 | Command | What it does |

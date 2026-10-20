@@ -34,6 +34,8 @@ Access the development site at http://wordpress.localhost (`wordpress` / `wordpr
 - PHPMyAdmin: http://localhost:8080
 - Mailpit (Email testing): http://localhost:8025
 
+**Worktrees:** those URLs belong to the main checkout. A worktree runs its own stack (Compose project, `wp/`, database volume) on the ports `pnpm worktree:env` reserved in its `.env`: read `WP_URL`, `PHPMYADMIN_PORT` and `MAILPIT_PORT` from there, never assume port 80, and only run `docker compose` from the worktree's own directory so you don't stop or reset another one's stack. `pnpm run setup` writes the `.env` itself; run `pnpm worktree:env` before `docker compose up` if you start the stack first.
+
 ### Build & Development
 ```bash
 # Build production bundle (runs composer install --no-dev first)
@@ -291,6 +293,7 @@ When either plugin provides a field group, the native fields for that group are 
 
 - WordPress runs on PHP 8.3 with Xdebug automatically installed
 - Database: MariaDB
-- PHPMyAdmin available on port 8080
+- PHPMyAdmin available on port 8080 (or `PHPMYADMIN_PORT` in a worktree)
 - Plugin mounted as volume for hot-reload
-- Custom PHP settings in `wordpress.ini`
+- Custom PHP settings in `wordpress.ini`; Apache vhosts in `apache.conf` and `apache-ports.conf`, which listen inside the container on the published ports so loopback requests to `WP_URL` work
+- Xdebug is off in worktrees (`XDEBUG_MODE` / `XDEBUG_PORT` in `.env`)

@@ -1,0 +1,10 @@
+# Worktrunk project hooks: every worktree reserves its own ports, so stacks run side by side.
+[[pre-start]]
+install = "pnpm install --frozen-lockfile"
+
+[[pre-start]]
+env = "pnpm worktree:env"
+
+# The worktree's wp/ folder goes with it, so its database volume would only be left orphaned.
+[pre-remove]
+docker = "docker compose down --volumes --remove-orphans || true"
