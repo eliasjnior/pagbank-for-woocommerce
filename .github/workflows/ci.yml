@@ -94,6 +94,8 @@ jobs:
   package:
     name: Plugin package
     runs-on: ubuntu-latest
+    outputs:
+      zip: ${{ steps.zip.outputs.name }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-php
@@ -121,7 +123,10 @@ jobs:
           fi
 
       - name: Create zip
-        run: pnpm exec tsx scripts/export.ts
+        id: zip
+        run: |
+          pnpm exec tsx scripts/export.ts
+          echo "name=$(basename build/pagbank-for-woocommerce-*.zip)" >> "$GITHUB_OUTPUT"
 
       - name: Verify zip contents
         run: pnpm exec tsx scripts/verify-export.ts
@@ -132,3 +137,26 @@ jobs:
           archive: false
           if-no-files-found: error
           retention-days: 14
+
+  plugin-check:
+    name: Plugin Check
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.zip }}
+          path: release
+          skip-decompress: true
+      - run: unzip -q "release/$ZIP" -d "$RUNNER_TEMP/plugin"
+        env:
+          ZIP: ${{ needs.package.outputs.zip }}
+      - uses: WordPress/plugin-check-action@v1
+        with:
+          build-dir: ${{ runner.temp }}/plugin/pagbank-for-woocommerce
+          # The PR comment needs pull-requests: write, which the release workflow does not grant when it calls CI.
+          repo-token: ""
+          # readme.txt is written in Portuguese for the Brazilian stores the plugin serves.
+          ignore-codes: |
+            readme_short_description_non_official_language
+            readme_description_non_official_language
