@@ -13,7 +13,7 @@
 		"build": "tsc && npx tsx scripts/build-ui.ts",
 		"postbuild": "pnpm composer install",
 		"preexport": "pnpm composer install --no-dev --optimize-autoloader",
-		"export": "tsc && npx tsx scripts/build-ui.ts && npx tsx scripts/export.ts",
+		"export": "tsc && npx tsx scripts/build-ui.ts && npx tsx scripts/export.ts && npx tsx scripts/verify-export.ts",
 		"postexport": "pnpm composer install",
 		"lint": "concurrently \"pnpm lint:core\" \"pnpm lint:ui\"",
 		"lint:core": "./scripts/phpcs.sh",

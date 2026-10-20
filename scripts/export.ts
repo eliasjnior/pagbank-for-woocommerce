@@ -38,6 +38,14 @@ const isComposerLeftover = (filePath: string): boolean => {
 	return relative.includes("/") || relative.startsWith("tmp-");
 };
 
+/**
+ * Dependencies ship their own tooling: dotfiles (.gitignore, .php-cs-fixer.dist.php,
+ * .phpstorm.meta.php) and CLI proxies in vendor/bin/ that nothing loads at runtime.
+ */
+const isDevelopmentFile = (filePath: string): boolean =>
+	filePath.split("/").some((segment) => segment.startsWith(".")) ||
+	filePath.startsWith("vendor/bin/");
+
 const getEntries = (dir: string): string[] => {
 	if (!Fs.existsSync(dir)) {
 		return [];
@@ -81,7 +89,7 @@ async function createZip() {
 
 		// Check if file should be included
 		const shouldInclude =
-			Path.basename(filePath) !== ".DS_Store" &&
+			!isDevelopmentFile(filePath) &&
 			!isComposerLeftover(filePath) &&
 			filesToInclude.some((include) => filePath.startsWith(include));
 
