@@ -75,7 +75,7 @@ wordpress_org_assets/  Banners, icons and screenshots for WordPress.org
 
 ## Continuous integration
 
-Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml). A pull request only runs the jobs its files can affect (a docs or template change skips the PHP, UI and package jobs; a workflow change runs everything), and **CI result**, the one required check, passes when no job failed:
 
 - PHPCS, PHPStan, and PHPUnit on PHP 7.4 to 8.3
 - Biome and TypeScript
@@ -107,7 +107,7 @@ WordPress.org serves the version named by `Stable tag` in `trunk/readme.txt`, so
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced locally by Husky and commitlint and again in CI.
 
-Branches follow the release flow, enforced by the required **Branch name** check:
+Branches follow the release flow, enforced by the **Branch name** job:
 
 - Work happens on `<type>/<name>` branches (`feat/pix-refunds`, `fix/boleto-email`, with the Conventional Commits types) and is merged into a `vX.Y.Z` release branch. Renovate also targets the release branches.
 - Only a `vX.Y.Z` branch is merged into `main`.
