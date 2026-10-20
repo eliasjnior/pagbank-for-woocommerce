@@ -173,11 +173,11 @@ jobs:
           - stack: oldest
             php: "7.4"
             wordpress: '"https://wordpress.org/wordpress-6.7.zip"'
-            woocommerce: 9.9.0
+            woocommerce: https://downloads.wordpress.org/plugin/woocommerce.9.9.0.zip
           - stack: latest
             php: "8.3"
             wordpress: "null"
-            woocommerce: ""
+            woocommerce: woocommerce
     env:
       WP_ENV_VERSION: 12.0.0
       SITE: ${{ github.workspace }}/../site
@@ -224,13 +224,14 @@ jobs:
           exit 1
 
       # Installed through WP-CLI so the folder is named woocommerce, which Requires Plugins looks for.
+      # A pinned release comes as a zip URL: wp-env run takes --version as its own flag and drops it.
       - name: Install WooCommerce and activate the plugin
         env:
           WOOCOMMERCE: ${{ matrix.woocommerce }}
         run: |
           cd "$SITE"
           wp() { npx --yes "@wordpress/env@$WP_ENV_VERSION" run cli wp "$@"; }
-          wp plugin install woocommerce ${WOOCOMMERCE:+"--version=$WOOCOMMERCE"} --activate
+          wp plugin install "$WOOCOMMERCE" --activate
           wp plugin activate pagbank-for-woocommerce
 
       - name: Run the smoke test
