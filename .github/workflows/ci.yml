@@ -160,3 +160,78 @@ jobs:
           ignore-codes: |
             readme_short_description_non_official_language
             readme_description_non_official_language
+
+  smoke-test:
+    name: Smoke test (${{ matrix.stack }})
+    needs: package
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest stack the plugin header accepts, and the current releases.
+        include:
+          - stack: oldest
+            php: "7.4"
+            wordpress: '"https://wordpress.org/wordpress-6.7.zip"'
+            woocommerce: 9.9.0
+          - stack: latest
+            php: "8.3"
+            wordpress: "null"
+            woocommerce: ""
+    env:
+      WP_ENV_VERSION: 12.0.0
+      SITE: ${{ github.workspace }}/../site
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.zip }}
+          path: release
+          skip-decompress: true
+
+      - name: Prepare the site
+        env:
+          ZIP: ${{ needs.package.outputs.zip }}
+          PHP: ${{ matrix.php }}
+          CORE: ${{ matrix.wordpress }}
+        run: |
+          mkdir -p "$SITE"
+          unzip -q "release/$ZIP" -d "$SITE"
+          jq -n --arg php "$PHP" --argjson core "$CORE" '{
+            core: $core,
+            phpVersion: $php,
+            testsEnvironment: false,
+            mappings: { "wp-content/plugins/pagbank-for-woocommerce": "./pagbank-for-woocommerce" },
+            config: {
+              WP_DEBUG_LOG: true,
+              WP_DEBUG_DISPLAY: false,
+              PAGBANK_FEATURE_FLAG_GOOGLE_PAY_ENABLED: true,
+              PAGBANK_FEATURE_FLAG_APPLE_PAY_ENABLED: true
+            }
+          }' > "$SITE/.wp-env.json"
+
+      # Building the wp-env images downloads PHPUnit from Packagist, which times out now and then.
+      - name: Start WordPress
+        run: |
+          cd "$SITE"
+          for attempt in 1 2 3; do
+            npx --yes "@wordpress/env@$WP_ENV_VERSION" start && exit 0
+            echo "::warning::wp-env failed to start (attempt $attempt)"
+          done
+          exit 1
+
+      # Installed through WP-CLI so the folder is named woocommerce, which Requires Plugins looks for.
+      - name: Install WooCommerce and activate the plugin
+        env:
+          WOOCOMMERCE: ${{ matrix.woocommerce }}
+        run: |
+          cd "$SITE"
+          wp() { npx --yes "@wordpress/env@$WP_ENV_VERSION" run cli wp "$@"; }
+          wp plugin install woocommerce ${WOOCOMMERCE:+"--version=$WOOCOMMERCE"} --activate
+          wp plugin activate pagbank-for-woocommerce
+
+      - name: Run the smoke test
+        run: cd "$SITE" && "$GITHUB_WORKSPACE/scripts/smoke-test.sh"

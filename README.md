@@ -81,6 +81,7 @@ Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 - Conventional Commits on every commit and on the PR title (the squash commit on `main`)
 - A package build that checks version consistency, fails when the `.pot` is outdated, and verifies that the zip has every asset the PHP enqueues and nothing from development
 - [Plugin Check](https://wordpress.org/plugins/plugin-check/), the WordPress.org review tool, on the built zip: errors fail the job, warnings are annotated
+- A smoke test that installs the zip with WooCommerce on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and on the latest one, then checks that every gateway registers, the storefront and the gateway settings screens render, and the plugin logs no PHP errors. `scripts/smoke-test.sh` runs the same checks against any local wp-env site
 
 The zip built for each PR is attached to the workflow run, so it can be installed on a test store.
 
