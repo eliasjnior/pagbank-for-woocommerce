@@ -1,6 +1,12 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Call to an undefined method WC_Order_Item\:\:get_product\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/core/Presentation/ApiHelpers.php
+
+		-
 			message: '#^Variable \$html on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.variable
 			count: 1
