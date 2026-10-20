@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.0.3
 License: GPLv2
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Aceite pagamentos via cartão de crédito, cartão de débito, Pix, boleto e redirecionamento (Pagar com PagBank e Checkout PagBank) no WooCommerce.
 
@@ -122,9 +122,9 @@ Para que os métodos de pagamento tenham o correto funcionamento, durante o chec
 
 Para instalar o PagBank for WooCommerce, você precisa:
 
-* WordPress versão 5.4 ou superior (instalado)
-* WooCommerce versão 3.9 ou superior (instalado e ativado)
-* PHP versão 7.4 ou superior
+* WordPress versão 6.7 ou superior (instalado)
+* WooCommerce versão 9.9 ou superior (instalado e ativado)
+* PHP versão 7.4 a 8.3
 * Conta no PagBank ([cadastre-se](https://cadastro.pagseguro.uol.com.br/))
 * Compatível com o checkout clássico (shortcode) e com o WooCommerce Checkout Blocks
 

@@ -1,6 +1,7 @@
 {
     "name": "pagbank/pagbank-for-woocommerce",
     "version": "2.0.3",
+    "license": "GPL-2.0-only",
     "autoload": {
         "psr-4": {
             "PagBank_WooCommerce\\": "src/core/"
