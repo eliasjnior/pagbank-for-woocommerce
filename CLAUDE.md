@@ -229,7 +229,7 @@ that proves the contract is loose.
 
 ## Continuous Integration & Releases
 
-`.github/workflows/ci.yml` runs on every pull request (and is reused by the release):
+`.github/workflows/ci.yml` runs on every pull request (and is reused by the release). The `changes` job maps the changed files to the php, ui and plugin areas and pull requests skip the jobs of untouched areas; `CI result` aggregates every job and is the only required check, so a new job must be added to its `needs`, and a new path that affects a job must be added to the `changes` patterns:
 
 - PHPCS (errors fail, warnings are annotated), PHPStan, PHPUnit on PHP 7.4–8.3, Biome, `tsc`
 - commitlint on every commit and on the PR title, which becomes the squash commit on `main`; commit body lines are limited to 100 characters
