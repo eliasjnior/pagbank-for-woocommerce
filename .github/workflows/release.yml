@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: Create the release as a draft
+        type: boolean
+        default: false
+      prerelease:
+        description: Mark the release as a pre-release
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Require the default branch
+        if: github.ref_name != github.event.repository.default_branch
+        run: |
+          echo "::error::Releases are cut from ${{ github.event.repository.default_branch }}, not ${{ github.ref_name }}."
+          exit 1
+
+      - uses: actions/checkout@v7
+
+      - id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # Tags carry the bare version, like the WordPress.org SVN tags, so they never clash with vX.Y.Z branches.
+      - name: Ensure the tag does not exist yet
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null || status=$?
+          case $status in
+            0) echo "::error::Tag $VERSION already exists. Bump the version before releasing."; exit 1 ;;
+            2) ;;
+            *) echo "::error::Could not list the remote tags."; exit 1 ;;
+          esac
+
+  ci:
+    name: CI
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish
+    needs: [prepare, ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: pagbank-for-woocommerce-${{ needs.prepare.outputs.version }}.zip
+          path: release
+          skip-decompress: true
+
+      # Lets anyone check the zip came from this workflow: gh attestation verify <zip> --repo <owner>/<repo>
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: release/*.zip
+
+      - name: Extract release notes from readme.txt
+        run: |
+          awk -v header="= $VERSION - " '
+            index($0, header) == 1 { found = 1; next }
+            found && /^=/ { exit }
+            found { print }
+          ' readme.txt > "$RUNNER_TEMP/notes.md"
+          test -s "$RUNNER_TEMP/notes.md"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRAFT: ${{ inputs.draft }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          flags=()
+          [ "$DRAFT" = true ] && flags+=(--draft)
+          [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+          gh release create "$VERSION" release/*.zip \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            "${flags[@]}"

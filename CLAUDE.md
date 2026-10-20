@@ -18,7 +18,7 @@ PagBank for WooCommerce is a WordPress plugin that integrates PagBank payment ga
 ### Setup
 ```bash
 # Initial project setup (after docker compose up)
-pnpm setup
+pnpm run setup  # `pnpm setup` is a built-in pnpm command
 
 # Install PHP dependencies
 pnpm composer install

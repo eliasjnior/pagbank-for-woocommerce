@@ -135,9 +135,6 @@ importers:
       woocommerce-monorepo:
         specifier: github:woocommerce/woocommerce
         version: https://codeload.github.com/woocommerce/woocommerce/tar.gz/3bc97a1c649b35a2bb2b550a446329eaca3e7e0c
-      wp-readme-to-markdown:
-        specifier: ^1.0.1
-        version: 1.0.1
 
 packages:
 
@@ -5071,11 +5068,6 @@ packages:
     resolution: {tarball: https://codeload.github.com/woocommerce/woocommerce/tar.gz/3bc97a1c649b35a2bb2b550a446329eaca3e7e0c}
     version: 0.0.0
     engines: {node: ^20.11.1}
-
-  wp-readme-to-markdown@1.0.1:
-    resolution: {integrity: sha512-5ZmQzhNZIBcTLYhIovyhBXucDD+JUhL7YAqfmLzPudCLFRodSLbsWtoiYREG/Z55TN1Zn+Rko5eKH965m1L8SA==}
-    engines: {node: '>=8.11.3'}
-    hasBin: true
 
   wp-textdomain@1.0.1:
     resolution: {integrity: sha512-6Guapw25yCmnQHyz62TEi1OvRnIzGfyj0sVaPBhwx19QoxeD6HI2zZHWeBIUXSauJK3BIyxWPYnxlwmnqHUskg==}
@@ -11519,10 +11511,6 @@ snapshots:
       wp-textdomain: 1.0.1
     transitivePeerDependencies:
       - supports-color
-
-  wp-readme-to-markdown@1.0.1:
-    dependencies:
-      minimist: 1.2.8
 
   wp-textdomain@1.0.1:
     dependencies:
