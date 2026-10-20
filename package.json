@@ -4,7 +4,7 @@
 	"author": "Elias Júnior <me@eliasjr.dev>",
 	"license": "GPL-2.0-only",
 	"type": "module",
-	"packageManager": "pnpm@10.34.5",
+	"packageManager": "pnpm@12.14.0",
 	"scripts": {
 		"setup": "./scripts/initial-setup.sh",
 		"composer": "./scripts/composer.sh",
@@ -45,7 +45,7 @@
 		"sass": "^1.95.1",
 		"terser": "^5.48.0",
 		"tsx": "^4.21.0",
-		"typescript": "^5.9.3",
+		"typescript": "^7.0.2",
 		"vite": "^7.2.7"
 	},
 	"dependencies": {
