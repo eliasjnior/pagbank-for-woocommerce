@@ -1,0 +1,40 @@
+name: Sugerir uma melhoria
+description: Uma funcionalidade nova ou uma mudança no comportamento do plugin.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema isso resolve?
+      description: Conte a situação da sua loja que motivou a sugestão.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Como você imagina a solução?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: Outras formas de resolver, incluindo outros plugins ou ajustes que você já tentou.
+
+  - type: dropdown
+    id: payment-methods
+    attributes:
+      label: Métodos de pagamento relacionados
+      multiple: true
+      options:
+        - Cartão de crédito
+        - Cartão de débito
+        - Pix
+        - Boleto
+        - Pagar com PagBank
+        - Checkout PagBank
+        - Google Pay
+        - Apple Pay
+        - Nenhum em específico

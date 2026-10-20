@@ -1,0 +1,132 @@
+name: Reportar um problema
+description: Algo no plugin não funciona como deveria.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar. Quanto mais detalhes, mais rápido conseguimos reproduzir.
+
+        **Não inclua dados sensíveis**: tokens, chaves, CPF/CNPJ, e-mails, endereços ou números de cartão de clientes. Substitua por `***`.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o problema e, se houver, a mensagem de erro exibida.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: Passo a passo até o problema acontecer.
+      placeholder: |
+        1. Adicionar um produto ao carrinho
+        2. No checkout, escolher Pix
+        3. Clicar em "Finalizar pedido"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que deveria acontecer?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: payment-methods
+    attributes:
+      label: Métodos de pagamento afetados
+      multiple: true
+      options:
+        - Cartão de crédito
+        - Cartão de débito
+        - Pix
+        - Boleto
+        - Pagar com PagBank
+        - Checkout PagBank
+        - Google Pay
+        - Apple Pay
+        - Não se aplica
+    validations:
+      required: true
+
+  - type: dropdown
+    id: checkout
+    attributes:
+      label: Tipo de checkout
+      options:
+        - Checkout em blocos
+        - Checkout clássico (shortcode)
+        - Ambos
+        - Não sei
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Ambiente do PagBank
+      options:
+        - Produção
+        - Sandbox
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Versão do PagBank for WooCommerce
+      placeholder: "2.0.3"
+    validations:
+      required: true
+
+  - type: input
+    id: woocommerce-version
+    attributes:
+      label: Versão do WooCommerce
+      placeholder: "11.2.1"
+    validations:
+      required: true
+
+  - type: input
+    id: wordpress-version
+    attributes:
+      label: Versão do WordPress
+      placeholder: "7.1.3"
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: Versão do PHP
+      placeholder: "8.3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: plugins
+    attributes:
+      label: Outros plugins relevantes
+      description: Campos de checkout (Brazilian Market, Calculadora de Frete e Campos Checkout para o Brasil), marketplace (Dokan, WCFM), assinaturas, cache ou segurança.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Ative **Habilitar logs** nas configurações do método de pagamento, reproduza o problema e copie o log em **WooCommerce > Status > Logs**. As fontes do plugin começam com `pagbank_`.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmações
+      options:
+        - label: Removi tokens, chaves e dados pessoais de clientes do texto e dos logs.
+          required: true
+        - label: O problema acontece na versão mais recente do plugin.
