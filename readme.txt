@@ -4,7 +4,7 @@ Tags: woocommerce, pagseguro, pagbank, pagamento, brasil
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.3
+Stable tag: 2.0.4
 License: GPLv2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -299,3 +299,6 @@ Caso o lojista não possua o identificador da conta preenchido, os produtos cada
 * Corrigido layout.
 * Corrigido versão mínima do WooCommerce declarada pelo plugin.
 * Atualizado a compatibilidade declarada para WordPress 7.1 e WooCommerce 11.0.
+
+= 2.0.4 - 2026-10-20 =
+* Atualizado dependências com correções de segurança.
