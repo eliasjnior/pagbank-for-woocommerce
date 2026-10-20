@@ -45,8 +45,16 @@ wp config set SCRIPT_DEBUG true --raw
 
 wp rewrite structure '/%postname%/'
 
-wp plugin install woocommerce woocommerce-extra-checkout-fields-for-brazil --activate
+wp plugin install woocommerce --activate
 wp plugin activate pagbank-for-woocommerce
+
+# Third-party Brazilian checkout fields, installed but inactive so the plugin's own fields are the
+# ones under test; activate one to check the interop
+for plugin in woocommerce-extra-checkout-fields-for-brazil woo-better-shipping-calculator-for-brazil; do
+	if ! wp plugin is-installed "$plugin"; then
+		wp plugin install "$plugin"
+	fi
+done
 wp plugin delete akismet hello 2>/dev/null || true
 
 wp theme install storefront --activate
