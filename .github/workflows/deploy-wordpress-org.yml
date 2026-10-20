@@ -1,0 +1,172 @@
+name: Deploy to WordPress.org
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Check and list what would be deployed without writing to SVN
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-wordpress-org
+  cancel-in-progress: false
+
+env:
+  SVN_URL: https://plugins.svn.wordpress.org/pagbank-for-woocommerce
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::package.json version '$version' is not X.Y.Z."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install Subversion
+        run: command -v svn >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q subversion; }
+
+      - name: Ensure the SVN tag does not exist yet
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tags=$(svn ls --non-interactive "$SVN_URL/tags/")
+          if grep -Fxq "$VERSION/" <<< "$tags"; then
+            echo "::error::$SVN_URL/tags/$VERSION already exists. WordPress.org tags are never overwritten."
+            exit 1
+          fi
+
+      - name: Download the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if ! is_draft=$(gh release view "$VERSION" --json isDraft --jq .isDraft); then
+            echo "::error::No GitHub release $VERSION. Run the Release workflow first."
+            exit 1
+          fi
+          if [ "$is_draft" = true ]; then
+            echo "::error::GitHub release $VERSION is still a draft. Publish it first."
+            exit 1
+          fi
+          if ! gh release download "$VERSION" --pattern "pagbank-for-woocommerce-$VERSION.zip" --dir release; then
+            echo "::error::GitHub release $VERSION has no pagbank-for-woocommerce-$VERSION.zip asset."
+            exit 1
+          fi
+
+      - name: Verify build provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: >-
+          gh attestation verify "release/pagbank-for-woocommerce-$VERSION.zip"
+          --repo "$GITHUB_REPOSITORY"
+          --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
+          --source-ref "refs/heads/$DEFAULT_BRANCH"
+
+      - name: Extract and list files
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          zip="release/pagbank-for-woocommerce-$VERSION.zip"
+          roots=$(unzip -Z1 "$zip" | cut -d/ -f1 | sort -u)
+          if [ "$roots" != pagbank-for-woocommerce ]; then
+            echo "::error::The zip must contain only the pagbank-for-woocommerce/ folder, found: ${roots//$'\n'/, }"
+            exit 1
+          fi
+          unzip -q "$zip" -d "$RUNNER_TEMP/plugin"
+          cd "$RUNNER_TEMP/plugin/pagbank-for-woocommerce"
+          count=$(find . -type f | wc -l)
+
+          echo "::group::$count files for $SVN_URL/tags/$VERSION"
+          find . -type f | sort
+          echo "::endgroup::"
+
+          if [ "$DRY_RUN" = true ]; then
+            verb="Would deploy"
+          else
+            verb="Deploying"
+          fi
+          {
+            echo "## $verb $VERSION to WordPress.org"
+            echo
+            echo "- Source: GitHub release \`$VERSION\`, provenance verified"
+            echo "- Target: $SVN_URL/tags/$VERSION"
+            echo "- Files: $count"
+            echo
+            echo "| Path | Files |"
+            echo "| --- | --- |"
+            find . -type f | cut -d/ -f2 | sort | uniq -c | awk '{ print "| `" $2 "` | " $1 " |" }'
+            echo
+            echo "Only \`tags/$VERSION\` is written; \`trunk/\` and \`assets/\` are untouched. WordPress.org keeps"
+            echo "serving the version named by \`Stable tag\` in \`trunk/readme.txt\` until trunk is updated to $VERSION."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - if: ${{ !inputs.dry-run }}
+        uses: actions/upload-artifact@v7
+        with:
+          path: release/pagbank-for-woocommerce-${{ steps.version.outputs.version }}.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    name: Deploy
+    needs: prepare
+    if: ${{ !inputs.dry-run }}
+    runs-on: ubuntu-latest
+    environment: wordpress-org
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: pagbank-for-woocommerce-${{ needs.prepare.outputs.version }}.zip
+          path: release
+          skip-decompress: true
+
+      - name: Install Subversion
+        run: command -v svn >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q subversion; }
+
+      # Checked again because the environment's reviewers may approve long after prepare ran.
+      - name: Ensure the SVN tag does not exist yet
+        run: |
+          tags=$(svn ls --non-interactive "$SVN_URL/tags/")
+          if grep -Fxq "$VERSION/" <<< "$tags"; then
+            echo "::error::$SVN_URL/tags/$VERSION already exists. WordPress.org tags are never overwritten."
+            exit 1
+          fi
+
+      # --no-ignore: svn's default global-ignores would silently drop matching files from the import.
+      - name: Import into the SVN tag
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+        run: |
+          unzip -q "release/pagbank-for-woocommerce-$VERSION.zip" -d "$RUNNER_TEMP/plugin"
+          printf '%s' "$SVN_PASSWORD" | svn import "$RUNNER_TEMP/plugin/pagbank-for-woocommerce" "$SVN_URL/tags/$VERSION" \
+            --message "Tag version $VERSION" \
+            --no-ignore \
+            --non-interactive \
+            --no-auth-cache \
+            --username "$SVN_USERNAME" \
+            --password-from-stdin
+          echo "Deployed $VERSION to $SVN_URL/tags/$VERSION." >> "$GITHUB_STEP_SUMMARY"
