@@ -68,6 +68,7 @@ With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` prepares each worktre
 
 - `wt switch --create feat/my-branch` copies `node_modules/`, `vendor/` and `certs/` from the main checkout (`.worktreeinclude`) and reserves the ports; it starts nothing
 - `wt list` shows each worktree's WordPress URL in its `url` column, dimmed while the stack is stopped
+- `wt links` lists every worktree's WordPress, phpMyAdmin and Mailpit links
 - `wt remove` stops the stack and deletes its database volume
 
 Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install` in the new worktree; `pnpm run setup` reserves the ports itself.

@@ -16,3 +16,24 @@ docker = "docker compose down --volumes --remove-orphans || true"
 # checkout records none and runs on the default URL.
 [list]
 url = "{{ vars.wpurl | default('http://wordpress.localhost:80' if branch == 'main' else '') }}"
+
+# The main checkout has no .env and runs on the default ports.
+[aliases]
+links = """
+main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+repo=$(basename "$main")
+git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r d; do
+  get() { sed -n "s/^$1=//p" "$d/.env" 2>/dev/null; }
+  if [ "$d" = "$main" ]; then
+    wp=http://wordpress.localhost pma=8080 mail=8025
+  else
+    wp=$(get WP_URL) pma=$(get PHPMYADMIN_PORT) mail=$(get MAILPIT_PORT)
+  fi
+  name=$(basename "$d" | sed "s/^$repo\\.//")
+  if [ -n "$wp" ]; then
+    echo "$name|$wp|http://localhost:$pma|http://localhost:$mail"
+  else
+    echo "$name|(no ports; run pnpm worktree:env)||"
+  fi
+done | (echo "WORKTREE|WORDPRESS|PHPMYADMIN|MAILPIT"; cat) | column -t -s '|'
+"""
