@@ -29,36 +29,42 @@ Development also needs Docker, Node 24 and pnpm (the version is pinned in `packa
 
 ```bash
 pnpm install
-docker compose up -d
 pnpm run setup
 ```
 
-`pnpm run setup` installs the dependencies, builds the assets, installs WordPress with WooCommerce and Storefront, and activates the plugin. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
+`pnpm run setup` installs the dependencies, starts the Docker stack, builds the assets and installs WordPress with WooCommerce and Storefront as a Brazilian store (BRL, a test product) with the plugin active. The site runs in development mode: `WP_DEBUG` and `SCRIPT_DEBUG` on, errors shown and logged to `logs/debug.log`. The setup is safe to run again. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
 
 | Service | URL |
 | --- | --- |
 | WordPress | http://wordpress.localhost (user `wordpress`, password `wordpress`) |
 | phpMyAdmin | http://localhost:8080 |
-| Mailpit | http://localhost:8025 |
+| Mailpit | http://localhost:8025 (every e-mail the site sends) |
 
-The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`.
+The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`. The WordPress image is built from `docker/wordpress/`, with WP-CLI inside it and no Xdebug.
+
+### PagBank connection
+
+Connect the plugin to PagBank once on the main checkout, then save the connection to its `.env` (gitignored):
+
+```bash
+pnpm pagbank:save-credentials
+```
+
+Every setup, in any worktree, loads the sandbox and production connections from there and enables the PagBank gateways, so no worktree needs a new OAuth. Run the command again whenever you reconnect.
 
 ### Parallel worktrees
 
-Each git worktree runs its own stack, with its own WordPress in `wp/`, database volume and ports, so several branches (or several AI agents) can work at once without touching each other. In a worktree, `pnpm run setup` first runs `pnpm worktree:env`, which reserves a free slot of host ports and writes them to `.env`:
+Each git worktree runs its own stack, with its own WordPress in `wp/`, database volume and ports, so several branches (or several AI agents) work at once without touching each other. `pnpm worktree:env`, which the setup runs first, reserves a free slot of host ports and writes them to the worktree's `.env`. WordPress is then served at `http://wordpress-<worktree>.localhost:<port>`; phpMyAdmin and Mailpit are on `localhost` at the ports in `.env`. The main checkout reserves nothing and keeps the URLs above.
 
-```bash
-git worktree add ../pagbank-for-woocommerce.my-branch -b feat/my-branch
-cd ../pagbank-for-woocommerce.my-branch
-pnpm install
-pnpm worktree:env   # WordPress at http://wordpress-my-branch.localhost:<port>
-docker compose up -d
-pnpm run setup
-```
+With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` does everything:
 
-The main checkout has no `.env` and keeps the URLs above; phpMyAdmin and Mailpit of a worktree are on `localhost` at the ports in its `.env`. Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot. Xdebug is off in worktrees: set `XDEBUG_MODE=debug` in `.env` and use `XDEBUG_PORT` as the port in `.vscode/launch.json`.
+- `wt switch --create feat/my-branch` copies `node_modules/`, `vendor/` and `certs/` from the main checkout (`.worktreeinclude`), reserves the ports and runs the whole setup in the background, logging to `logs/setup.log` until it prints the site URL
+- `wt list` shows each worktree's WordPress URL in its `url` column
+- `wt remove` stops the stack and deletes its database volume
 
-With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` installs the dependencies and writes `.env` when `wt switch --create` makes the worktree, shows each WordPress URL in the `url` column of `wt list`, and `wt remove` stops the stack and deletes its database volume.
+Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install && pnpm run setup` in the new worktree.
+
+Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot.
 
 ## Commands
 
