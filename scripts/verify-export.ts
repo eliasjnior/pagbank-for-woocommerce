@@ -22,7 +22,7 @@ const forbidden: Array<[pattern: RegExp, reason: string]> = [
 		"dev dependency",
 	],
 	[
-		/^(composer\.(json|lock)|package\.json|pnpm-lock\.yaml|phpunit\.xml|phpstan.*|README.*\.md|CLAUDE\.md)$/,
+		/^(composer\.lock|package\.json|pnpm-lock\.yaml|phpunit\.xml|phpstan.*|README.*\.md|CLAUDE\.md)$/,
 		"dev file",
 	],
 ];
@@ -31,6 +31,7 @@ const required = [
 	"pagbank-for-woocommerce.php",
 	"readme.txt",
 	"vendor/autoload.php",
+	"composer.json",
 	`languages/${data.name}.pot`,
 ];
 

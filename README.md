@@ -80,6 +80,7 @@ Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 - Biome and TypeScript
 - Conventional Commits on every commit and on the PR title (the squash commit on `main`)
 - A package build that checks version consistency, fails when the `.pot` is outdated, and verifies that the zip has every asset the PHP enqueues and nothing from development
+- [Plugin Check](https://wordpress.org/plugins/plugin-check/), the WordPress.org review tool, on the built zip: errors fail the job, warnings are annotated
 
 The zip built for each PR is attached to the workflow run, so it can be installed on a test store.
 

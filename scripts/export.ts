@@ -19,6 +19,7 @@ const filesToInclude = [
 	"src/core/",
 	"src/templates/",
 	"vendor/",
+	"composer.json",
 	"pagbank-for-woocommerce.php",
 	"readme.txt",
 ];
