@@ -46,8 +46,7 @@
 		"terser": "^5.48.0",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
-		"vite": "^7.2.7",
-		"woocommerce-monorepo": "github:woocommerce/woocommerce"
+		"vite": "^7.2.7"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.2",
