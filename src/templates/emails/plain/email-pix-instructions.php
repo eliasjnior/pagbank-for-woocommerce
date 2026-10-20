@@ -23,7 +23,7 @@ echo "---------------------------------------------------------------------\n\n"
 echo esc_html__( 'OPÇÃO 2: USE O CÓDIGO DO PIX', 'pagbank-for-woocommerce' ) . "\n\n";
 echo esc_html__( 'Copie o código abaixo e cole no aplicativo do seu banco:', 'pagbank-for-woocommerce' ) . "\n\n";
 
-echo $pix_text . "\n\n";
+echo esc_html( $pix_text ) . "\n\n";
 
 echo esc_html__( 'Passos para pagar:', 'pagbank-for-woocommerce' ) . "\n\n";
 echo '1. ' . esc_html__( 'Abra o aplicativo ou site do seu banco e selecione a opção "Pagar com Pix"', 'pagbank-for-woocommerce' ) . "\n";
