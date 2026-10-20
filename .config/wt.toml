@@ -1,16 +1,12 @@
-# Worktrunk project config: every worktree gets its own stack, installed and configured on creation.
+# Worktrunk project config: every worktree gets its own stack, started only on demand.
 
-# Dependencies come from the main checkout as copy-on-write clones, and .env reserves the ports
-# before anything starts.
+# Dependencies come from the main checkout as copy-on-write clones, and .env reserves the ports.
+# Nothing starts here: `pnpm run setup` installs and starts the stack when it is needed.
 [[pre-start]]
 copy = "wt step copy-ignored"
 
 [[pre-start]]
 env = "pnpm worktree:env"
-
-# The full install runs in the background; logs/setup.log ends with the site URL once it is ready.
-[post-start]
-setup = "mkdir -p logs && pnpm run setup > logs/setup.log 2>&1"
 
 # The worktree's wp/ folder goes with it, so its database volume would only be left orphaned.
 [pre-remove]

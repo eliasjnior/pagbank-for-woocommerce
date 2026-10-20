@@ -39,7 +39,7 @@ Access the development site at http://wordpress.localhost (`wordpress` / `wordpr
 
 **Worktrees:** those URLs belong to the main checkout. A worktree runs its own stack (Compose project, `wp/`, database volume) on the ports `pnpm worktree:env` reserved in its `.env`: read `WP_URL`, `PHPMYADMIN_PORT` and `MAILPIT_PORT` from there, never assume port 80, and only run `docker compose` from the worktree's own directory so you don't stop or reset another one's stack. `pnpm run setup` writes the `.env` itself; run `pnpm worktree:env` before `docker compose up` if you start the stack first.
 
-A worktree made by `wt switch --create` sets itself up in the background (`.config/wt.toml`): it is ready once `logs/setup.log` ends with `Setup complete: <url>`. Wait for that line before using the site or `pnpm wp`, and read `logs/setup.log` if it stops on an error instead. PHP notices and errors land in `logs/debug.log`, and e-mails in Mailpit.
+A worktree's stack never starts on its own (`wt switch --create` only copies the dependencies and reserves the ports). Start it only when the task needs WordPress: `pnpm run setup` the first time, which ends with `Setup complete: <url>`, and `docker compose up -d --wait` after that. Run `docker compose stop` when you are done, so stacks don't pile up. Unit tests, linting and builds need no stack. PHP notices and errors land in `logs/debug.log`, and e-mails in Mailpit.
 
 ### Build & Development
 ```bash

@@ -56,13 +56,21 @@ Every setup, in any worktree, loads the sandbox and production connections from 
 
 Each git worktree runs its own stack, with its own WordPress in `wp/`, database volume and ports, so several branches (or several AI agents) work at once without touching each other. `pnpm worktree:env`, which the setup runs first, reserves a free slot of host ports and writes them to the worktree's `.env`. WordPress is then served at `http://wordpress-<worktree>.localhost:<port>`; phpMyAdmin and Mailpit are on `localhost` at the ports in `.env`. The main checkout reserves nothing and keeps the URLs above.
 
-With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` does everything:
+A worktree's stack only runs when you start it, so idle worktrees cost nothing:
 
-- `wt switch --create feat/my-branch` copies `node_modules/`, `vendor/` and `certs/` from the main checkout (`.worktreeinclude`), reserves the ports and runs the whole setup in the background, logging to `logs/setup.log` until it prints the site URL
-- `wt list` shows each worktree's WordPress URL in its `url` column
+```bash
+pnpm run setup        # first time: installs and configures the site, then leaves the stack running
+docker compose stop   # done for now
+docker compose up -d  # back to work, same ports and data
+```
+
+With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` prepares each worktree:
+
+- `wt switch --create feat/my-branch` copies `node_modules/`, `vendor/` and `certs/` from the main checkout (`.worktreeinclude`) and reserves the ports; it starts nothing
+- `wt list` shows each worktree's WordPress URL in its `url` column, dimmed while the stack is stopped
 - `wt remove` stops the stack and deletes its database volume
 
-Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install && pnpm run setup` in the new worktree.
+Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install` in the new worktree; `pnpm run setup` reserves the ports itself.
 
 Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot.
 
