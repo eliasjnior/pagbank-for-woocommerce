@@ -170,4 +170,37 @@ class HelpersTest extends TestCase {
 
 		$this->assertSame( array(), $GLOBALS['pagbank_test_notices'] );
 	}
+
+	/**
+	 * Covers every combination of the 3DS settings and what the checkout posts.
+	 *
+	 * @dataProvider threeds_requirement_provider
+	 *
+	 * @param bool        $enabled           Whether 3DS is required.
+	 * @param bool        $allow_unsupported Whether cards not eligible for 3DS are accepted.
+	 * @param string|null $id                Posted authentication id.
+	 * @param string|null $status            Posted authentication status.
+	 * @param bool        $expected          Expected result.
+	 */
+	public function test_is_threeds_requirement_met( bool $enabled, bool $allow_unsupported, ?string $id, ?string $status, bool $expected ): void {
+		$this->assertSame( $expected, Helpers::is_threeds_requirement_met( $enabled, $allow_unsupported, $id, $status ) );
+	}
+
+	/**
+	 * Cases for test_is_threeds_requirement_met.
+	 */
+	public function threeds_requirement_provider(): array {
+		$id = '3DS_EFE7F199-FCA1-47AC-8F8D-3E4D23678481';
+
+		return array(
+			'3DS disabled'                                => array( false, false, null, null, true ),
+			'authenticated card'                          => array( true, false, $id, null, true ),
+			'no authentication'                           => array( true, false, null, null, false ),
+			'empty id'                                    => array( true, true, '', null, false ),
+			'not eligible, store rejects them'            => array( true, false, null, 'AUTH_NOT_SUPPORTED', false ),
+			'not eligible, store accepts them'            => array( true, true, null, 'AUTH_NOT_SUPPORTED', true ),
+			'store accepts them, but no status posted'    => array( true, true, null, null, false ),
+			'store accepts them, but PagBank denied card' => array( true, true, null, 'CHANGE_PAYMENT_METHOD', false ),
+		);
+	}
 }
