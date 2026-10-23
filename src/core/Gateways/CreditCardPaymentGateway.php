@@ -1218,6 +1218,9 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 
 		$order->update_meta_data( '_pagbank_order_id', $response['id'] );
 		$order->update_meta_data( '_pagbank_charge_id', $charge['id'] );
+		if ( isset( $charge['amount']['value'] ) && is_int( $charge['amount']['value'] ) ) {
+			$order->update_meta_data( '_pagbank_charge_amount', $charge['amount']['value'] );
+		}
 
 		$order->update_meta_data( '_' . $this->card_field_prefix . '_brand', $charge['payment_method']['card']['brand'] );
 		if ( isset( $charge['payment_method']['installments'] ) ) {

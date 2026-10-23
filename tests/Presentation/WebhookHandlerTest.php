@@ -105,7 +105,7 @@ class WebhookHandlerTest extends TestCase {
 
 	/**
 	 * The GET /orders fallback only yields a charge when the order, its reference,
-	 * the charge id and the amount all match what the plugin sent for the WC order.
+	 * the charge id and the charged amount all match what the plugin stored for the WC order.
 	 *
 	 * @dataProvider order_charge_provider
 	 *
@@ -123,6 +123,30 @@ class WebhookHandlerTest extends TestCase {
 		);
 
 		$this->assertSame( $expected ?? $pagbank_order['charges'][0], $result );
+	}
+
+	/**
+	 * Without a stored charged amount the amount is not compared, since the order total differs
+	 * from the charge for interest and the 1-cent card check.
+	 */
+	public function test_verify_order_charge_skips_amount_without_stored_amount(): void {
+		$charge = array(
+			'id'           => 'CHAR_1',
+			'reference_id' => self::REFERENCE_ID,
+			'amount'       => array(
+				'value'    => 1,
+				'currency' => 'BRL',
+			),
+		);
+
+		$pagbank_order = array(
+			'id'           => 'ORDE_1',
+			'reference_id' => self::REFERENCE_ID,
+			'charges'      => array( $charge ),
+		);
+
+		$this->assertSame( $charge, WebhookHandler::verify_order_charge( $pagbank_order, 'ORDE_1', self::REFERENCE_ID, 'CHAR_1', null, 'BRL' ) );
+		$this->assertSame( 'currency_mismatch', WebhookHandler::verify_order_charge( $pagbank_order, 'ORDE_1', self::REFERENCE_ID, 'CHAR_1', null, 'USD' ) );
 	}
 
 	public function order_charge_provider(): array {

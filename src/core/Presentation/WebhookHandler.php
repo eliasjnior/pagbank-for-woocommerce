@@ -205,12 +205,12 @@ class WebhookHandler {
 	/**
 	 * Pick the charge from a PagBank order returned by Api::get_order(), checking it belongs to the WC order.
 	 *
-	 * @param array  $pagbank_order    Decoded GET /orders/{id} response.
-	 * @param string $pagbank_order_id PagBank order id that was requested.
-	 * @param string $reference_id     Raw reference_id that passed the webhook signature check.
-	 * @param string $charge_id        Expected charge id.
-	 * @param int    $amount_cents     WC order total in cents.
-	 * @param string $currency         WC order currency.
+	 * @param array    $pagbank_order    Decoded GET /orders/{id} response.
+	 * @param string   $pagbank_order_id PagBank order id that was requested.
+	 * @param string   $reference_id     Raw reference_id that passed the webhook signature check.
+	 * @param string   $charge_id        Expected charge id.
+	 * @param int|null $amount_cents     Amount charged when the order was paid, or null to skip the check.
+	 * @param string   $currency         WC order currency.
 	 * @return array|string The charge, or the reason it was rejected.
 	 */
 	public static function verify_order_charge(
@@ -218,7 +218,7 @@ class WebhookHandler {
 		string $pagbank_order_id,
 		string $reference_id,
 		string $charge_id,
-		int $amount_cents,
+		?int $amount_cents,
 		string $currency
 	) {
 		if ( ( $pagbank_order['id'] ?? null ) !== $pagbank_order_id ) {
@@ -246,7 +246,7 @@ class WebhookHandler {
 			return 'charge_reference_id_mismatch';
 		}
 
-		if ( ( $charge['amount']['value'] ?? null ) !== $amount_cents ) {
+		if ( null !== $amount_cents && ( $charge['amount']['value'] ?? null ) !== $amount_cents ) {
 			return 'amount_mismatch';
 		}
 
@@ -255,6 +255,23 @@ class WebhookHandler {
 		}
 
 		return $charge;
+	}
+
+	/**
+	 * Amount of the given charge in a PagBank order, for logging.
+	 *
+	 * @param array  $pagbank_order Decoded GET /orders/{id} response.
+	 * @param string $charge_id     Charge id.
+	 * @return mixed
+	 */
+	private static function find_charge_amount( array $pagbank_order, string $charge_id ) {
+		foreach ( (array) ( $pagbank_order['charges'] ?? array() ) as $candidate ) {
+			if ( is_array( $candidate ) && ( $candidate['id'] ?? null ) === $charge_id ) {
+				return $candidate['amount']['value'] ?? null;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -317,17 +334,27 @@ class WebhookHandler {
 			return null;
 		}
 
+		// No stored amount (older orders, Checkout PagBank): the order total can't stand in for it, as interest,
+		// the 1-cent card check and cent truncation make them differ; the signed reference already binds the charge.
+		$stored_amount = $order->get_meta( '_pagbank_charge_amount' );
+		$amount_cents  = is_numeric( $stored_amount ) ? (int) $stored_amount : null;
+
 		$charge = self::verify_order_charge(
 			$pagbank_order,
 			$pagbank_order_id,
 			$reference_id,
 			$charge_id,
-			Helpers::format_money_cents( (float) $order->get_total() ),
+			$amount_cents,
 			$order->get_currency()
 		);
 
 		if ( is_string( $charge ) ) {
 			$context['reason'] = $charge;
+
+			if ( 'amount_mismatch' === $charge ) {
+				$context['expected_amount'] = $amount_cents;
+				$context['received_amount'] = self::find_charge_amount( $pagbank_order, $charge_id );
+			}
 			$this->log( 'Webhook verification failed: PagBank order does not match the WC order', $context );
 
 			return null;
