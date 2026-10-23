@@ -17,14 +17,17 @@ PagBank for WooCommerce is a WordPress plugin that integrates PagBank payment ga
 
 ### Setup
 ```bash
-# Initial project setup (after docker compose up)
+# Full, idempotent setup: dependencies, Docker stack, build, WordPress, store and PagBank connection
 pnpm run setup  # `pnpm setup` is a built-in pnpm command
 
 # Install PHP dependencies
 pnpm composer install
 
 # Start Docker environment
-docker compose up
+docker compose up -d --wait
+
+# Save the PagBank connection of the current site to the main checkout's .env for future setups
+pnpm pagbank:save-credentials
 ```
 
 Access the development site at http://wordpress.localhost (`wordpress` / `wordpress`); the setup installs WordPress under that URL.
@@ -33,6 +36,11 @@ Access the development site at http://wordpress.localhost (`wordpress` / `wordpr
 - WordPress: http://wordpress.localhost
 - PHPMyAdmin: http://localhost:8080
 - Mailpit (Email testing): http://localhost:8025
+- PagBank webhooks: a public `*.trycloudflare.com` URL that changes on every start; `pnpm tunnel:url` prints it
+
+**Worktrees:** those URLs belong to the main checkout. A worktree runs its own stack (Compose project, `wp/`, database volume) on the ports `pnpm worktree:env` reserved in its `.env`: read `WP_URL`, `PHPMYADMIN_PORT` and `MAILPIT_PORT` from there (`wt links` lists them for every worktree), never assume port 80, and only run `docker compose` from the worktree's own directory so you don't stop or reset another one's stack. `pnpm run setup` writes the `.env` itself; run `pnpm worktree:env` before `docker compose up` if you start the stack first.
+
+A worktree's stack never starts on its own (`wt switch --create` only copies the dependencies and reserves the ports). Start it only when the task needs WordPress: `pnpm run setup` the first time, which ends with `Setup complete: <url>`, and `docker compose up -d --wait` after that. Run `docker compose stop` when you are done, so stacks don't pile up. Unit tests, linting and builds need no stack. PHP notices and errors land in `logs/debug.log`, and e-mails in Mailpit.
 
 ### Build & Development
 ```bash
@@ -229,11 +237,11 @@ that proves the contract is loose.
 
 ## Continuous Integration & Releases
 
-`.github/workflows/ci.yml` runs on every pull request (and is reused by the release):
+`.github/workflows/ci.yml` runs on every pull request (and is reused by the release). The `changes` job maps the changed files to the php, ui and plugin areas and pull requests skip the jobs of untouched areas; `CI result` aggregates every job and is the only required check, so a new job must be added to its `needs`, and a new path that affects a job must be added to the `changes` patterns:
 
 - PHPCS (errors fail, warnings are annotated), PHPStan, PHPUnit on PHP 7.4–8.3, Biome, `tsc`
 - commitlint on every commit and on the PR title, which becomes the squash commit on `main`; commit body lines are limited to 100 characters
-- Branch name: pull requests into a `vX.Y.Z` release branch must come from `<type>/<name>` (Conventional Commits types, lowercase) or `renovate/...`, and pull requests into `main` only from a `vX.Y.Z` branch. Name new branches that way
+- Branch name: pull requests into a `vX.Y.Z` release branch must come from `<type>/<name>` (Conventional Commits types, lowercase) or `renovate/...`, and pull requests into `main` only from a `vX.Y.Z` branch. Name new branches that way; a layer of a stack must be typed too, since its base is the typed branch below it
 - Package: `check:version`, a production build, the `.pot` compared with a fresh `make-pot` (source references ignored, so only string changes matter), then the zip and its verification
 - Plugin Check on the zip. It also scans `src/templates/`, which `.phpcs.xml` leaves out
 - Smoke test on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and the latest one
@@ -243,6 +251,8 @@ What this means when changing code:
 - Changing a translatable string requires `pnpm make:pot` and committing the `.pot`
 - A new gateway needs its id in `GATEWAYS` in `scripts/smoke-test.sh`; a new enqueued asset must be produced by the build
 - Do not bump versions by hand; `pnpm bump` also fixes the `composer.lock` content-hash, which depends on the `composer.json` version
+
+Stacked pull requests: split a large change with `gh stack init --base vX.Y.Z feat/a`, then `gh stack add feat/b` for each layer; `gh stack init` otherwise bases the stack on `main`. Each layer is a typed branch whose PR targets the one below it, and every PR is held to the release branch's rules (`CI result`), with CI running on its own diff. Keep a stack's branches in one worktree, since git refuses to check out a branch another worktree holds, and `gh stack rebase`/`sync` switch between them. Merging a PR also merges every unmerged PR below it, bottom-up, and GitHub retargets the next one to `vX.Y.Z`; auto-merge does not work on stacks.
 
 Releases: create `vX.Y.Z` from `main`, bump and write the `readme.txt` changelog entry on a `chore/` branch merged into it, merge `vX.Y.Z` into `main`, then run the **Release** workflow from `main`. It tags `X.Y.Z` (no `v`, matching the WordPress.org SVN tags and avoiding clashes with release branches) and publishes the zip with a build provenance attestation and the changelog entry as notes.
 
@@ -287,10 +297,14 @@ Plugin detection:
 
 When either plugin provides a field group, the native fields for that group are not inserted. `ApiHelpers` reads the Blocks additional fields first and falls back to the legacy `_billing_*` meta, so every combination resolves.
 
+My Account address pages: WooCommerce adds every address-location Blocks field to the edit address form, next to the classic fields that `woocommerce_billing_fields` inserts there too. `CheckoutBlocksFields::maybe_deregister_on_my_account()` deregisters the `pagbank/*` fields on the `edit-address` endpoint, so the classic fields (ours or a third-party plugin's) are the only editor. Deregistering, not filtering the form, matters: WooCommerce saves every registered additional field missing from the POST as empty. The two customer meta stores stay in sync both ways: Blocks writes also go to the interop keys (`save_field_to_legacy_meta`), a My Account save is mirrored back to `_wc_{group}/pagbank/*`, and each side falls back to the other when empty (`get_customer_meta()`, `default_from_legacy_meta()`).
+
 ## Development Environment Details
 
-- WordPress runs on PHP 8.3 with Xdebug automatically installed
-- Database: MariaDB
-- PHPMyAdmin available on port 8080
+- WordPress runs on PHP 8.3 from the image in `docker/wordpress/` (WP-CLI and msmtp, no Xdebug); `pnpm wp` runs WP-CLI inside it as `www-data`
+- Development mode: `WP_ENVIRONMENT_TYPE=development`, `WP_DEBUG`, `WP_DEBUG_DISPLAY` and `SCRIPT_DEBUG` on, `WP_DEBUG_LOG` at `logs/debug.log`
+- Database: MariaDB; PHPMyAdmin on port 8080 (or `PHPMYADMIN_PORT` in a worktree)
 - Plugin mounted as volume for hot-reload
-- Custom PHP settings in `wordpress.ini`
+- PHP settings in `docker/wordpress/php.ini`; Apache vhosts in `docker/wordpress/apache.conf` and `apache-ports.conf`, which listen inside the container on the published ports so loopback requests to `WP_URL` work
+- `mail()` goes to Mailpit; the WP-CLI download cache in `~/.wp-cli/cache` is shared by every worktree
+- PagBank webhooks arrive through a Cloudflare quick tunnel (`webhook-tunnel`, `*.trycloudflare.com`) that only reaches the `webhook-proxy` Caddy service, which forwards exactly `POST /wc-api/pagbank_woocommerce_handler` (no query string) to WordPress with the `WP_HOST:WP_HTTP_PORT` Host header and answers 404 to the rest; never point the tunnel at WordPress itself, the admin is `wordpress`/`wordpress`. `webhook-url` (`docker/webhook-tunnel/sync-url.sh`) polls cloudflared's `/ready` and `/quicktunnel` metrics, writes `PAGBANK_WEBHOOK_SITE_URL` to `wp-config.php` and deletes it when the tunnel stops. `pnpm tunnel:url` prints the webhook URL, `docker compose logs webhook-proxy` shows the requests, the `pagbank_webhook` WooCommerce log shows how they were handled, and `PAGBANK_WEBHOOK_TUNNEL=0` leaves the three services out

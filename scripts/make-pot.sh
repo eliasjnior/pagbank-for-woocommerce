@@ -1,1 +1,1 @@
-docker compose run --rm wordpress-cli wp i18n make-pot wp-content/plugins/pagbank-for-woocommerce wp-content/plugins/pagbank-for-woocommerce/languages/pagbank-for-woocommerce.pot --exclude="vendor,wp" --slug="pagbank-for-woocommerce" --domain="pagbank-for-woocommerce"
+docker compose run --rm --no-deps -u www-data wordpress wp i18n make-pot wp-content/plugins/pagbank-for-woocommerce wp-content/plugins/pagbank-for-woocommerce/languages/pagbank-for-woocommerce.pot --exclude="vendor,wp" --slug="pagbank-for-woocommerce" --domain="pagbank-for-woocommerce"

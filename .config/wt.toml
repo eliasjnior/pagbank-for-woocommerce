@@ -1,0 +1,41 @@
+# Worktrunk project config: every worktree gets its own stack, started only on demand.
+
+# Dependencies come from the main checkout as copy-on-write clones, and .env reserves the ports.
+# Nothing starts here: `pnpm run setup` installs and starts the stack when it is needed.
+[[pre-start]]
+copy = "wt step copy-ignored"
+
+[[pre-start]]
+env = "pnpm worktree:env"
+
+# The worktree's wp/ folder goes with it, so its database volume would only be left orphaned.
+[pre-remove]
+docker = "docker compose down --volumes --remove-orphans || true"
+
+# `pnpm worktree:env` records each worktree's URL as a Worktrunk var on its branch; the main
+# checkout records none and runs on the default URL.
+[list]
+url = "{{ vars.wpurl | default('http://wordpress.localhost:80' if branch == 'main' else '') }}"
+
+# The main checkout has no .env and runs on the default ports.
+[aliases]
+links = """
+main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+repo=$(basename "$main")
+git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r d; do
+  get() { sed -n "s/^$1=//p" "$d/.env" 2>/dev/null; }
+  if [ "$d" = "$main" ]; then
+    wp=http://wordpress.localhost pma=8080 mail=8025
+  else
+    wp=$(get WP_URL) pma=$(get PHPMYADMIN_PORT) mail=$(get MAILPIT_PORT)
+  fi
+  name=$(basename "$d" | sed "s/^$repo\\.//")
+  # PAGBANK_WEBHOOK_SITE_URL, which the webhook tunnel keeps current while the stack runs.
+  tunnel=$(sed -n "s/.*'PAGBANK_WEBHOOK_SITE_URL', *'\\([^']*\\)'.*/\\1/p" "$d/wp/wp-config.php" 2>/dev/null)
+  if [ -n "$wp" ]; then
+    echo "$name|$wp|http://localhost:$pma|http://localhost:$mail|${tunnel:--}"
+  else
+    echo "$name|(no ports; run pnpm worktree:env)|||"
+  fi
+done | (echo "WORKTREE|WORDPRESS|PHPMYADMIN|MAILPIT|WEBHOOKS"; cat) | column -t -s '|'
+"""

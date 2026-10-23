@@ -346,4 +346,108 @@ class ApiHelpersTest extends TestCase {
 			),
 		);
 	}
+
+	/**
+	 * A partial refund keeps the charge PAID; only the refunded summary proves it went through.
+	 *
+	 * @dataProvider refund_success_provider
+	 */
+	public function test_is_refund_successful( $charge, float $amount, bool $expected ): void {
+		$this->assertSame( $expected, ApiHelpers::is_refund_successful( $charge, $amount ) );
+	}
+
+	public function refund_success_provider(): array {
+		$charge = static function ( string $status, int $refunded ): array {
+			return array(
+				'status' => $status,
+				'amount' => array(
+					'value'   => 1000,
+					'summary' => array(
+						'total'    => 1000,
+						'paid'     => 1000,
+						'refunded' => $refunded,
+					),
+				),
+			);
+		};
+
+		return array(
+			'full refund'                       => array( $charge( 'CANCELED', 1000 ), 10.00, true ),
+			'partial refund'                    => array( $charge( 'PAID', 500 ), 5.00, true ),
+			'second partial refund, cumulative' => array( $charge( 'PAID', 800 ), 3.00, true ),
+			'refunded below requested'          => array( $charge( 'PAID', 300 ), 5.00, false ),
+			'nothing refunded'                  => array( $charge( 'PAID', 0 ), 5.00, false ),
+			'missing summary'                   => array( array( 'status' => 'PAID' ), 5.00, false ),
+			'not an array'                      => array( null, 5.00, false ),
+		);
+	}
+
+	/**
+	 * The production response for a refund the account balance cannot cover.
+	 */
+	public function test_get_refund_error_message_explains_missing_balance(): void {
+		$message = ApiHelpers::get_refund_error_message(
+			array(
+				'error_messages' => array(
+					array(
+						'code'        => '40008',
+						'message'     => 'refund_temporarily_unavailable',
+						'description' => 'Insufficient balance to refund transaction.',
+						'error'       => 'refund_temporarily_unavailable',
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString( 'saldo disponível', $message );
+		$this->assertStringContainsString( 'painel do PagBank', $message );
+	}
+
+	public function test_get_refund_error_message_keeps_details_of_other_temporary_failures(): void {
+		$message = ApiHelpers::get_refund_error_message(
+			array(
+				'error_messages' => array(
+					array(
+						'code'        => '40008',
+						'description' => 'Transaction is not found.',
+						'error'       => 'refund_temporarily_unavailable',
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString( 'temporariamente indisponível', $message );
+		$this->assertStringContainsString( 'Transaction is not found. (código 40008)', $message );
+	}
+
+	public function test_get_refund_error_message_includes_unknown_error_details(): void {
+		$message = ApiHelpers::get_refund_error_message(
+			array(
+				'error_messages' => array(
+					array(
+						'code'        => '40002',
+						'description' => '<b>invalid</b> amount',
+						'error'       => 'invalid_parameter',
+					),
+				),
+			)
+		);
+
+		$this->assertSame( 'O PagBank recusou o reembolso: invalid amount (código 40002)', $message );
+	}
+
+	/**
+	 * @dataProvider refund_error_without_details_provider
+	 */
+	public function test_get_refund_error_message_falls_back_without_details( $body ): void {
+		$this->assertSame( 'Houve um erro ao tentar realizar o reembolso.', ApiHelpers::get_refund_error_message( $body ) );
+	}
+
+	public function refund_error_without_details_provider(): array {
+		return array(
+			'null body'            => array( null ),
+			'html body'            => array( '<html>Bad Gateway</html>' ),
+			'empty error_messages' => array( array( 'error_messages' => array() ) ),
+		);
+	}
 }

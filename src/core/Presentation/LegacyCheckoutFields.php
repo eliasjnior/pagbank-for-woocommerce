@@ -82,6 +82,10 @@ class LegacyCheckoutFields {
 		add_filter( 'woocommerce_process_checkout_field_billing_cnpj', array( $this, 'normalize_cnpj_value' ) );
 		add_filter( 'woocommerce_process_checkout_field_billing_cellphone', array( $this, 'normalize_cellphone_value' ) );
 		add_filter( 'woocommerce_checkout_posted_data', array( $this, 'clear_unselected_document_fields' ) );
+		add_filter( 'woocommerce_process_myaccount_field_billing_cpf', array( $this, 'normalize_cpf_value' ) );
+		add_filter( 'woocommerce_process_myaccount_field_billing_cnpj', array( $this, 'normalize_cnpj_value' ) );
+		add_filter( 'woocommerce_process_myaccount_field_billing_cellphone', array( $this, 'normalize_cellphone_value' ) );
+		add_action( 'woocommerce_after_save_address_validation', array( $this, 'validate_account_address' ), 10, 4 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_render_brazilian_market_deprecation_notice' ) );
 		add_action( 'wp_ajax_' . self::BRAZILIAN_MARKET_NOTICE_DISMISS_ACTION, array( $this, 'dismiss_brazilian_market_deprecation_notice' ) );
@@ -521,6 +525,58 @@ class LegacyCheckoutFields {
 		if ( $this->registered_cellphone ) {
 			$this->validate_cellphone_field( $data, $errors );
 		}
+	}
+
+	/**
+	 * Validate the native fields on the My Account billing address form, and
+	 * drop the document values of the unselected person type, like the checkout.
+	 *
+	 * Runs after WooCommerce copied the submitted values to the customer and
+	 * enforced the core required flags; an error notice stops the save.
+	 *
+	 * @param int         $user_id      User ID.
+	 * @param string      $address_type Address type (billing|shipping).
+	 * @param array       $address      The address fields.
+	 * @param WC_Customer $customer     The customer being saved.
+	 */
+	public function validate_account_address( int $user_id, string $address_type, array $address, WC_Customer $customer ): void {
+		if ( 'billing' !== $address_type || 'BR' !== $customer->get_billing_country() ) {
+			return;
+		}
+
+		$data = array(
+			'billing_persontype' => (string) $customer->get_meta( 'billing_persontype' ),
+			'billing_cpf'        => (string) $customer->get_meta( 'billing_cpf' ),
+			'billing_cnpj'       => (string) $customer->get_meta( 'billing_cnpj' ),
+			'billing_company'    => $customer->get_billing_company(),
+		);
+
+		$errors = new WP_Error();
+
+		if ( $this->registered_document ) {
+			$this->validate_document_fields( $data, $errors );
+		}
+
+		// Emptiness is already reported by the core required flag.
+		$cellphone = (string) $customer->get_meta( 'billing_cellphone' );
+
+		if ( $this->registered_cellphone && '' !== $cellphone && ! Helpers::is_valid_cellphone( $cellphone ) ) {
+			$errors->add( 'billing_cellphone_validation', __( 'Número de celular inválido.', 'pagbank-for-woocommerce' ) );
+		}
+
+		foreach ( $errors->get_error_messages() as $message ) {
+			wc_add_notice( $message, 'error' );
+		}
+
+		if ( $errors->has_errors() || ! $this->registered_document ) {
+			return;
+		}
+
+		$data = self::clear_document_posted_data( $data );
+
+		$customer->update_meta_data( 'billing_cpf', $data['billing_cpf'] );
+		$customer->update_meta_data( 'billing_cnpj', $data['billing_cnpj'] );
+		$customer->set_billing_company( $data['billing_company'] );
 	}
 
 	/**

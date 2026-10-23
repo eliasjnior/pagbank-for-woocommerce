@@ -24,29 +24,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields as WooCheckoutFields;
-use Automattic\WooCommerce\Blocks\Package;
+use PagBank_WooCommerce\Presentation\Blocks\CheckoutBlocksFields;
 use WC_Order;
 
 /**
  * Class AddressFormatting.
  */
 class AddressFormatting {
-
-	/**
-	 * Additional checkout fields hidden from the order confirmation and
-	 * view-order pages (their data is rendered inside the formatted address
-	 * and the document summary instead).
-	 */
-	private const CONFIRMATION_HIDDEN_FIELD_IDS = array(
-		'pagbank/persontype',
-		'pagbank/cpf',
-		'pagbank/cnpj',
-		'pagbank/company',
-		'pagbank/address-number',
-		'pagbank/neighborhood',
-		'pagbank/cellphone',
-	);
 
 	/**
 	 * Instance.
@@ -220,9 +204,9 @@ class AddressFormatting {
 			return $address;
 		}
 
-		$address['number']       = (string) get_user_meta( $customer_id, $address_type . '_number', true );
-		$address['neighborhood'] = (string) get_user_meta( $customer_id, $address_type . '_neighborhood', true );
-		$address['cellphone']    = 'billing' === $address_type ? (string) get_user_meta( $customer_id, 'billing_cellphone', true ) : '';
+		$address['number']       = CheckoutBlocksFields::get_customer_meta( (int) $customer_id, $address_type . '_number' );
+		$address['neighborhood'] = CheckoutBlocksFields::get_customer_meta( (int) $customer_id, $address_type . '_neighborhood' );
+		$address['cellphone']    = 'billing' === $address_type ? CheckoutBlocksFields::get_customer_meta( (int) $customer_id, 'billing_cellphone' ) : '';
 
 		return $address;
 	}
@@ -242,28 +226,9 @@ class AddressFormatting {
 			return;
 		}
 
-		if ( ! class_exists( Package::class ) ) {
-			return;
-		}
-
-		try {
-			$checkout_fields = Package::container()->get( WooCheckoutFields::class );
-		} catch ( \Throwable $e ) {
-			return;
-		}
-
-		// `deregister_checkout_field()` is marked @internal in WooCommerce, and
-		// there is no public equivalent for address-location fields: the frontend
-		// renders them through CheckoutFieldsFrontend::render_order_address_fields(),
-		// which never runs `woocommerce_filter_fields_for_order_confirmation`.
-		// Degrade to showing the rows rather than fataling if it ever goes away.
-		if ( ! method_exists( $checkout_fields, 'deregister_checkout_field' ) ) {
-			return;
-		}
-
-		foreach ( self::CONFIRMATION_HIDDEN_FIELD_IDS as $field_id ) {
-			$checkout_fields->deregister_checkout_field( $field_id );
-		}
+		// There is no public way to hide them: CheckoutFieldsFrontend::render_order_address_fields()
+		// never runs `woocommerce_filter_fields_for_order_confirmation`.
+		CheckoutBlocksFields::deregister_fields( CheckoutBlocksFields::FIELD_IDS );
 	}
 
 	/**

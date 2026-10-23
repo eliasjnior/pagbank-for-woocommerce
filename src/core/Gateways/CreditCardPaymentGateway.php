@@ -303,6 +303,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 			}
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
 		return apply_filters( 'woocommerce_gateway_title', $this->title, $this->id );
 	}
 
@@ -688,18 +689,25 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 			$default_fields['cart-cvc-field'] = $cvc_field;
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
 		$fields = wp_parse_args( $fields, apply_filters( 'woocommerce_credit_card_form_fields', $default_fields, $this->id ) );
 		?>
 
 		<fieldset id="wc-<?php echo esc_attr( $this->id ); ?>-cc-form" class='wc-credit-card-form wc-payment-form'>
-			<?php do_action( 'woocommerce_credit_card_form_start', $this->id ); ?>
+			<?php
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
+			do_action( 'woocommerce_credit_card_form_start', $this->id );
+			?>
 			<?php
 			foreach ( $fields as $field ) {
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- XSS ok.
 				echo $field;
 			}
 			?>
-			<?php do_action( 'woocommerce_credit_card_form_end', $this->id ); ?>
+			<?php
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
+			do_action( 'woocommerce_credit_card_form_end', $this->id );
+			?>
 			<div class="clear"></div>
 		</fieldset>
 		<?php
@@ -1218,6 +1226,9 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 
 		$order->update_meta_data( '_pagbank_order_id', $response['id'] );
 		$order->update_meta_data( '_pagbank_charge_id', $charge['id'] );
+		if ( isset( $charge['amount']['value'] ) && is_int( $charge['amount']['value'] ) ) {
+			$order->update_meta_data( '_pagbank_charge_amount', $charge['amount']['value'] );
+		}
 
 		$order->update_meta_data( '_' . $this->card_field_prefix . '_brand', $charge['payment_method']['card']['brand'] );
 		if ( isset( $charge['payment_method']['installments'] ) ) {

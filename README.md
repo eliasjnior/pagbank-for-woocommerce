@@ -29,19 +29,63 @@ Development also needs Docker, Node 24 and pnpm (the version is pinned in `packa
 
 ```bash
 pnpm install
-docker compose up -d
 pnpm run setup
 ```
 
-`pnpm run setup` installs the dependencies, builds the assets, installs WordPress with WooCommerce and Storefront, and activates the plugin. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
+`pnpm run setup` installs the dependencies, starts the Docker stack, builds the assets and installs WordPress with WooCommerce and Storefront as a Brazilian store in BRL with the plugin active: WooCommerce's sample products, the shop as the home page, the Blocks checkout at `/checkout/` and the shortcode one at `/legacy-checkout/`, both without a sidebar. Brazilian Market and LinkNacional's Brazilian checkout fields plugins are installed but inactive, so the plugin's own fields are the ones in use; activate one to test the interop. The site runs in development mode: `WP_DEBUG` and `SCRIPT_DEBUG` on, errors shown and logged to `logs/debug.log`. The setup is safe to run again. Use `pnpm run setup`, not `pnpm setup`, which is a built-in pnpm command.
 
 | Service | URL |
 | --- | --- |
 | WordPress | http://wordpress.localhost (user `wordpress`, password `wordpress`) |
 | phpMyAdmin | http://localhost:8080 |
-| Mailpit | http://localhost:8025 |
+| Mailpit | http://localhost:8025 (every e-mail the site sends) |
 
-The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`.
+The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`. The WordPress image is built from `docker/wordpress/`, with WP-CLI inside it and no Xdebug.
+
+### PagBank connection
+
+Connect the plugin to PagBank once on the main checkout, then save the connection to its `.env` (gitignored):
+
+```bash
+pnpm pagbank:save-credentials
+```
+
+Every setup, in any worktree, loads the sandbox and production connections from there, so no worktree needs a new OAuth. A new site starts with every PagBank gateway enabled on sandbox, even when production is connected too. Run the command again whenever you reconnect.
+
+### PagBank webhooks
+
+The stack gets a public HTTPS address for PagBank's notifications from a [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/), with no account needed. The tunnel only reaches a Caddy proxy (`docker/webhook-tunnel/Caddyfile`) that forwards `POST /wc-api/pagbank_woocommerce_handler` to WordPress and answers 404 to everything else, so the admin and the rest of the site stay private. The address changes on every start; the `webhook-url` service writes it to `PAGBANK_WEBHOOK_SITE_URL` in `wp-config.php` and removes it when the tunnel stops, so new orders always carry a live notification URL.
+
+```bash
+pnpm tunnel:url                                     # current webhook URL; the setup prints it too
+docker compose logs -f webhook-proxy                # every request that came through the tunnel
+PAGBANK_WEBHOOK_TUNNEL=0 docker compose up -d       # run without the tunnel (or set it in .env)
+```
+
+What the plugin did with each webhook is logged under the `pagbank_webhook` source in WooCommerce > Status > Logs. Quick tunnels have no uptime guarantee, so an order created before a restart keeps the old, dead URL.
+
+### Parallel worktrees
+
+Each git worktree runs its own stack, with its own WordPress in `wp/`, database volume and ports, so several branches (or several AI agents) work at once without touching each other. `pnpm worktree:env`, which the setup runs first, reserves a free slot of host ports and writes them to the worktree's `.env`. WordPress is then served at `http://wordpress-<worktree>.localhost:<port>`; phpMyAdmin and Mailpit are on `localhost` at the ports in `.env`. The main checkout reserves nothing and keeps the URLs above.
+
+A worktree's stack only runs when you start it, so idle worktrees cost nothing:
+
+```bash
+pnpm run setup        # first time: installs and configures the site, then leaves the stack running
+docker compose stop   # done for now
+docker compose up -d  # back to work, same ports and data
+```
+
+With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` prepares each worktree:
+
+- `wt switch --create feat/my-branch` copies `node_modules/`, `vendor/` and `certs/` from the main checkout (`.worktreeinclude`) and reserves the ports; it starts nothing
+- `wt list` shows each worktree's WordPress URL in its `url` column, dimmed while the stack is stopped
+- `wt links` lists every worktree's WordPress, phpMyAdmin and Mailpit links and its webhook URL
+- `wt remove` stops the stack and deletes its database volume
+
+Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install` in the new worktree; `pnpm run setup` reserves the ports itself.
+
+Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot.
 
 ## Commands
 
@@ -58,6 +102,7 @@ The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PH
 | `pnpm check:version` | Checks that every version declaration matches `package.json` |
 | `pnpm export` | Builds the production zip into `build/` and verifies its contents |
 | `pnpm wp <command>` | Runs WP-CLI against the development site |
+| `pnpm tunnel:url` | Prints the public URL PagBank sends webhooks to |
 
 PHP tooling and Composer run inside Docker, so no local PHP install is needed.
 
@@ -75,7 +120,7 @@ wordpress_org_assets/  Banners, icons and screenshots for WordPress.org
 
 ## Continuous integration
 
-Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml). A pull request only runs the jobs its files can affect (a docs or template change skips the PHP, UI and package jobs; a workflow change runs everything), and **CI result**, the one required check, passes when no job failed:
 
 - PHPCS, PHPStan, and PHPUnit on PHP 7.4 to 8.3
 - Biome and TypeScript
@@ -107,10 +152,21 @@ WordPress.org serves the version named by `Stable tag` in `trunk/readme.txt`, so
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced locally by Husky and commitlint and again in CI.
 
-Branches follow the release flow, enforced by the required **Branch name** check:
+Branches follow the release flow, enforced by the **Branch name** job:
 
 - Work happens on `<type>/<name>` branches (`feat/pix-refunds`, `fix/boleto-email`, with the Conventional Commits types) and is merged into a `vX.Y.Z` release branch. Renovate also targets the release branches.
 - Only a `vX.Y.Z` branch is merged into `main`.
+
+A large change can go up as a [stack of pull requests](https://docs.github.com/en/pull-requests/get-started/stacked-prs-quickstart), each one reviewed on its own diff. With the [`gh stack`](https://github.com/github/gh-stack) extension (`gh extension install github/gh-stack`), base the stack on the release branch, since it defaults to `main`:
+
+```bash
+gh stack init --base vX.Y.Z feat/pix-refunds-api   # bottom layer, targets vX.Y.Z
+gh stack add feat/pix-refunds-ui                    # targets feat/pix-refunds-api
+gh stack submit                                     # push and open the stacked PRs
+gh stack sync                                       # after a merge: rebase what is left
+```
+
+Every layer is a `<type>/<name>` branch and must pass **CI result**, as on the release branch. Merging a pull request also merges the ones below it, and GitHub then retargets the next one to the release branch. Keep a stack in one worktree, because `gh stack` switches between its branches.
 
 `main` and the `vX.Y.Z` branches are protected: no direct pushes or force pushes, and every pull request needs the CI checks to pass.
 

@@ -1,52 +1,48 @@
+# Host ports default to the main checkout's; `pnpm worktree:env` writes a .env with free ones so
+# several worktrees can run their stacks side by side.
+x-wordpress-db: &wordpress-db
+  WORDPRESS_DB_HOST: database:3306
+  WORDPRESS_DB_USER: wordpress
+  WORDPRESS_DB_PASSWORD: wordpress
+  WORDPRESS_DB_NAME: wordpress
+
 services:
   wordpress:
-    image: wordpress:php8.3
+    build: docker/wordpress
+    # Rebuilding on every `up` is a cache hit unless docker/wordpress changed.
+    pull_policy: build
     depends_on:
-      - database
-      - mailpit
+      database:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
     volumes:
       - ./wp:/var/www/html
       - ./:/var/www/html/wp-content/plugins/pagbank-for-woocommerce
-      - ./wordpress.ini:/usr/local/etc/php/conf.d/wordpress.ini
+      - ./docker/wordpress/php.ini:/usr/local/etc/php/conf.d/zz-pagbank.ini:ro
+      - ./docker/wordpress/apache.conf:/etc/apache2/sites-enabled/pagbank.conf:ro
+      - ./docker/wordpress/apache-ports.conf:/etc/apache2/ports.conf:ro
       - ./logs:/var/log
       - ./certs:/etc/ssl/custom-certs:ro
-      - ./ssl.conf:/etc/apache2/sites-available/ssl.conf:ro
-    entrypoint: |
-      bash -c "
-        # Install Xdebug if not present
-        if ! php -m | grep -q xdebug; then
-          echo 'Installing Xdebug...'
-          yes | pecl install xdebug
-          docker-php-ext-enable xdebug
-          echo 'Xdebug installed successfully!'
-        else
-          echo 'Xdebug is already installed.'
-        fi
-
-        # SSL Certificate setup
-        if ls /etc/ssl/custom-certs/*.crt 1>/dev/null 2>&1; then
-          echo 'Using custom SSL certificates from ./certs/'
-          cp /etc/ssl/custom-certs/*.crt /etc/ssl/certs/server.crt
-          cp /etc/ssl/custom-certs/*.key /etc/ssl/private/server.key
-        else
-          echo 'No custom certificates found, generating self-signed certificate...'
-          openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/server.key -out /etc/ssl/certs/server.crt -subj '/CN=localhost/O=PagBank Development/C=BR'
-          echo 'Self-signed certificate generated!'
-        fi
-        chmod 600 /etc/ssl/private/server.key
-
-        a2enmod ssl
-        a2ensite ssl
-        exec apache2-foreground
-      "
+      # Shared by every worktree, so WordPress, WooCommerce and themes download once.
+      - ${HOME}/.wp-cli/cache:/var/www/.wp-cli/cache
+    # Resolves the site host to this container, so loopback requests from WordPress and WP-CLI
+    # reach Apache instead of the host's loopback.
+    networks:
+      default:
+        aliases:
+          - ${WP_HOST:-wordpress.localhost}
     ports:
-      - 80:80
-      - 443:443
+      - ${WP_HTTP_PORT:-80}:${WP_HTTP_PORT:-80}
+      - ${WP_HTTPS_PORT:-443}:${WP_HTTPS_PORT:-443}
     environment:
-      WORDPRESS_DB_HOST: db:3306
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress
-      WORDPRESS_DB_NAME: wordpress
+      <<: *wordpress-db
+      WP_HTTP_PORT: ${WP_HTTP_PORT:-80}
+      WP_HTTPS_PORT: ${WP_HTTPS_PORT:-443}
+    healthcheck:
+      test: curl -fso /dev/null "http://127.0.0.1:$${WP_HTTP_PORT}/wp-includes/images/blank.gif"
+      interval: 2s
+      start_period: 60s
 
   database:
     image: mariadb
@@ -57,24 +53,17 @@ services:
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
       MYSQL_PASSWORD: wordpress
-
-  wordpress-cli:
-    image: wordpress:cli
-    depends_on:
-      - wordpress
-    volumes:
-      - wp_data:/var/www/html
-      - ./wp:/var/www/html
-      - ./:/var/www/html/wp-content/plugins/pagbank-for-woocommerce
-    profiles:
-      - tools
+    healthcheck:
+      test: mariadb-admin ping -h 127.0.0.1 --silent
+      interval: 2s
+      start_period: 30s
 
   phpmyadmin:
     image: phpmyadmin
     depends_on:
       - database
     ports:
-      - 8080:80
+      - ${PHPMYADMIN_PORT:-8080}:80
     environment:
       PMA_ARBITRARY: 0
       PMA_HOST: database
@@ -87,11 +76,43 @@ services:
   mailpit:
     image: axllent/mailpit
     ports:
-      - 8025:8025
-      - 1025:1025
+      - ${MAILPIT_PORT:-8025}:8025
+      - ${MAILPIT_SMTP_PORT:-1025}:1025
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  # PagBank webhooks reach the stack through a Cloudflare quick tunnel that only sees this proxy.
+  # PAGBANK_WEBHOOK_TUNNEL=0 leaves all three out.
+  webhook-proxy:
+    image: caddy:2-alpine
+    deploy:
+      replicas: ${PAGBANK_WEBHOOK_TUNNEL:-1}
+    volumes:
+      - ./docker/webhook-tunnel/Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      WP_HOST: ${WP_HOST:-wordpress.localhost}
+      WP_HTTP_PORT: ${WP_HTTP_PORT:-80}
+
+  webhook-tunnel:
+    image: cloudflare/cloudflared:latest
+    deploy:
+      replicas: ${PAGBANK_WEBHOOK_TUNNEL:-1}
+    command: tunnel --metrics 0.0.0.0:2000 --url http://webhook-proxy:8080
+    restart: unless-stopped
+
+  webhook-url:
+    image: wordpress:cli
+    deploy:
+      replicas: ${PAGBANK_WEBHOOK_TUNNEL:-1}
+    # The owner of wp-config.php in the wordpress image, which this one names 82.
+    user: '33:33'
+    entrypoint: /usr/local/bin/sync-url
+    volumes:
+      - ./wp:/var/www/html
+      - ./docker/webhook-tunnel/sync-url.sh:/usr/local/bin/sync-url:ro
+    environment:
+      HOME: /tmp
 
   composer:
     image: composer:latest
@@ -115,4 +136,3 @@ services:
 
 volumes:
   db_data: {}
-  wp_data: {}

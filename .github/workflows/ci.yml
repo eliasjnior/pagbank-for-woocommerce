@@ -16,6 +16,7 @@ concurrency:
 jobs:
   # Changes reach a vX.Y.Z release branch from a typed branch (feat/..., fix/...) or Renovate,
   # and only a release branch reaches the default branch. Rulesets on this plan cannot match the source branch.
+  # A stacked PR targets the typed branch below it until GitHub retargets it, so it follows the same rule.
   branch-name:
     name: Branch name
     if: github.event_name == 'pull_request'
@@ -30,7 +31,7 @@ jobs:
           typed='^((feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/[a-z0-9][a-z0-9._-]*|renovate/.+)$'
           if [ "$BASE" = "$DEFAULT_BRANCH" ]; then
             allowed=$release expected="a release branch (vX.Y.Z)"
-          elif [[ $BASE =~ $release ]]; then
+          elif [[ $BASE =~ $release || $BASE =~ $typed ]]; then
             allowed=$typed expected="<type>/<name>, e.g. feat/pix-refunds or fix/boleto-email"
           else
             exit 0
@@ -40,8 +41,51 @@ jobs:
             exit 1
           fi
 
+  # Pull requests only run the jobs their files can affect. Skipped jobs count as passing in CI result,
+  # the single required check, because a skipped matrix job never reports under its expanded name.
+  changes:
+    name: Changed files
+    runs-on: ubuntu-latest
+    outputs:
+      php: ${{ steps.filter.outputs.php }}
+      ui: ${{ steps.filter.outputs.ui }}
+      plugin: ${{ steps.filter.outputs.plugin }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT" != pull_request ]; then
+            printf '%s=true\n' php ui plugin >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch -q --depth=1 origin "$BASE_SHA"
+          files=$(git diff --name-only "$BASE_SHA" HEAD)
+          echo "$files"
+
+          # Changes to CI itself run everything, so a workflow edit is always exercised.
+          ci='^\.github/(workflows|actions)/'
+          declare -A areas=(
+            [php]='\.php$|^composer\.(json|lock)$|^\.phpcs\.xml$|^phpstan|^phpunit\.xml$|^tests/'
+            [ui]='^src/ui/|^scripts/|^package\.json$|^pnpm-lock\.yaml$|^biome\.json$|^tsconfig\.json$'
+            [plugin]='^src/|^languages/|^scripts/|^pagbank-for-woocommerce\.php$|^readme\.txt$|^phpstan-bootstrap\.php$|^composer\.(json|lock)$|^package\.json$|^pnpm-lock\.yaml$'
+          )
+
+          for area in "${!areas[@]}"; do
+            if grep -qE "$ci|${areas[$area]}" <<<"$files"; then
+              echo "$area=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$area=false" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
   phpcs:
     name: PHP coding standards
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -61,6 +105,8 @@ jobs:
 
   phpstan:
     name: PHP static analysis
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -75,6 +121,8 @@ jobs:
 
   phpunit:
     name: PHP tests (PHP ${{ matrix.php }})
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -90,6 +138,8 @@ jobs:
 
   ui:
     name: UI lint and types
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -119,6 +169,8 @@ jobs:
 
   package:
     name: Plugin package
+    needs: changes
+    if: needs.changes.outputs.plugin == 'true'
     runs-on: ubuntu-latest
     outputs:
       zip: ${{ steps.zip.outputs.name }}
@@ -262,3 +314,18 @@ jobs:
 
       - name: Run the smoke test
         run: cd "$SITE" && "$GITHUB_WORKSPACE/scripts/smoke-test.sh"
+
+  result:
+    name: CI result
+    if: always()
+    needs: [branch-name, changes, phpcs, phpstan, phpunit, ui, commits, package, plugin-check, smoke-test]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"$RESULTS"
+          if jq -e 'any(.[]; .result == "failure" or .result == "cancelled")' <<<"$RESULTS" >/dev/null; then
+            echo "::error::A required job failed or was cancelled."
+            exit 1
+          fi
