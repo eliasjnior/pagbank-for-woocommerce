@@ -303,6 +303,7 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 			}
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
 		return apply_filters( 'woocommerce_gateway_title', $this->title, $this->id );
 	}
 
@@ -688,18 +689,25 @@ class CreditCardPaymentGateway extends WC_Payment_Gateway_CC {
 			$default_fields['cart-cvc-field'] = $cvc_field;
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
 		$fields = wp_parse_args( $fields, apply_filters( 'woocommerce_credit_card_form_fields', $default_fields, $this->id ) );
 		?>
 
 		<fieldset id="wc-<?php echo esc_attr( $this->id ); ?>-cc-form" class='wc-credit-card-form wc-payment-form'>
-			<?php do_action( 'woocommerce_credit_card_form_start', $this->id ); ?>
+			<?php
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
+			do_action( 'woocommerce_credit_card_form_start', $this->id );
+			?>
 			<?php
 			foreach ( $fields as $field ) {
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- XSS ok.
 				echo $field;
 			}
 			?>
-			<?php do_action( 'woocommerce_credit_card_form_end', $this->id ); ?>
+			<?php
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
+			do_action( 'woocommerce_credit_card_form_end', $this->id );
+			?>
 			<div class="clear"></div>
 		</fieldset>
 		<?php
