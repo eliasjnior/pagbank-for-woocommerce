@@ -56,6 +56,7 @@ interface GatewayConfig {
 		maximum_installments_interest_free: number;
 		card_public_key: string;
 		threeds_enabled: boolean;
+		threeds_allow_unsupported: boolean;
 		api_3ds_session_url: string;
 		threeds_nonce: string;
 		environment: "sandbox" | "production";
@@ -540,6 +541,10 @@ const processEncryptedCard = async (gateway: GatewayConfig): Promise<boolean> =>
 			`${prefix}-threeds-id`,
 		) as HTMLInputElement | null;
 
+		const threedsStatusInput = document.getElementById(
+			`${prefix}-threeds-status`,
+		) as HTMLInputElement | null;
+
 		if (!encryptedCardInput) {
 			throw new Error(gateway.messages.invalid_encrypted_card);
 		} else if (!cardBinInput) {
@@ -590,13 +595,20 @@ const processEncryptedCard = async (gateway: GatewayConfig): Promise<boolean> =>
 				billingAddress: threeDSContext.billingAddress,
 			});
 
+			if (result.status !== "AUTH_FLOW_COMPLETED") {
+				console.warn("PagBank 3DS authentication status:", result.status);
+			}
+
 			if (result.status === "CHANGE_PAYMENT_METHOD") {
 				throw new Error(gateway.messages.threeds_change_payment_method);
 			}
 
-			// AUTH_NOT_SUPPORTED: Block the transaction - 3DS authentication is required
 			if (result.status === "AUTH_NOT_SUPPORTED") {
-				throw new Error(gateway.messages.threeds_not_supported);
+				if (!gateway.settings.threeds_allow_unsupported || !threedsStatusInput) {
+					throw new Error(gateway.messages.threeds_not_supported);
+				}
+
+				threedsStatusInput.value = result.status;
 			}
 
 			if (result.status === "AUTH_FLOW_COMPLETED" && result.id && threedsIdInput) {
@@ -784,7 +796,12 @@ const bootstrapCheckout = (gateway: GatewayConfig): void => {
 
 const resetEncryptedCardFields = (gateway: GatewayConfig): void => {
 	const prefix = gateway.card_field_prefix;
-	const ids = [`${prefix}-encrypted-card`, `${prefix}-card-bin`, `${prefix}-threeds-id`];
+	const ids = [
+		`${prefix}-encrypted-card`,
+		`${prefix}-card-bin`,
+		`${prefix}-threeds-id`,
+		`${prefix}-threeds-status`,
+	];
 
 	ids.forEach((id) => {
 		const input = document.getElementById(id) as HTMLInputElement | null;

@@ -24,6 +24,11 @@ use PagBank_WooCommerce\Validators\AlphanumericCNPJ;
 class Helpers {
 
 	/**
+	 * 3DS status for a card the issuer does not enrol in 3DS.
+	 */
+	public const THREEDS_AUTH_NOT_SUPPORTED = 'AUTH_NOT_SUPPORTED';
+
+	/**
 	 * Format money to cents.
 	 *
 	 * @param float $value Value.
@@ -420,5 +425,29 @@ class Helpers {
 		}
 
 		wc_add_notice( $message, 'error' );
+	}
+
+	/**
+	 * Whether a new card payment meets the gateway's 3DS requirement.
+	 *
+	 * AUTH_NOT_SUPPORTED carries no authentication id, so it only passes when the
+	 * store accepts cards that are not eligible for 3DS.
+	 *
+	 * @param bool        $threeds_enabled   Whether 3DS is required.
+	 * @param bool        $allow_unsupported Whether cards not eligible for 3DS are accepted.
+	 * @param string|null $threeds_id        Authentication id posted by the checkout.
+	 * @param string|null $threeds_status    Authentication status posted by the checkout.
+	 */
+	public static function is_threeds_requirement_met(
+		bool $threeds_enabled,
+		bool $allow_unsupported,
+		?string $threeds_id,
+		?string $threeds_status
+	): bool {
+		if ( ! $threeds_enabled || ( null !== $threeds_id && '' !== $threeds_id ) ) {
+			return true;
+		}
+
+		return $allow_unsupported && self::THREEDS_AUTH_NOT_SUPPORTED === $threeds_status;
 	}
 }
