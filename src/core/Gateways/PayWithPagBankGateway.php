@@ -149,6 +149,7 @@ class PayWithPagBankGateway extends WC_Payment_Gateway {
 			}
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook.
 		return apply_filters( 'woocommerce_gateway_title', $this->title, $this->id );
 	}
 
