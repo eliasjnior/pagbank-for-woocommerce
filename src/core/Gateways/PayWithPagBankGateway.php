@@ -439,7 +439,7 @@ class PayWithPagBankGateway extends WC_Payment_Gateway {
 		wp_enqueue_script(
 			'pagbank-payment-instructions',
 			plugins_url( 'dist/public/order-received/payment-instructions.js', PAGBANK_WOOCOMMERCE_FILE_PATH ),
-			array( 'react', 'react-dom', 'wp-i18n' ),
+			array( 'react', 'react-jsx-runtime', 'react-dom', 'wp-i18n' ),
 			PAGBANK_WOOCOMMERCE_VERSION,
 			true
 		);

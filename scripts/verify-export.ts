@@ -88,6 +88,18 @@ async function verify() {
 		}
 	}
 
+	// Bundles run as plain browser scripts, where an un-rewritten require() of an external throws.
+	for (const [path, entry] of files) {
+		if (path.startsWith("dist/") && path.endsWith(".js")) {
+			const [call] =
+				(await entry.async("string")).match(/\brequire\(\s*["'][^"']*["']\s*\)/) ?? [];
+
+			if (call) {
+				errors.push(`${path} calls ${call}, which is undefined in the browser`);
+			}
+		}
+	}
+
 	const installed = files.get("vendor/composer/installed.json");
 
 	if (installed) {

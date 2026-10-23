@@ -199,6 +199,7 @@ class PaymentGateways {
 	private function enqueue_gateway_settings_scripts( string $gateway_id ): void {
 		$dependencies = array(
 			'react',
+			'react-jsx-runtime',
 			'react-dom',
 			'wp-element',
 			'wp-components',

@@ -14,6 +14,10 @@ export const externals: Record<string, string> = {
 	// React dependencies
 	react: "React",
 	"react-dom": "ReactDOM",
+	// Rolldown leaves a bundled CommonJS module's require() of an external as is, so the
+	// subpaths that require React must be externals too.
+	"react/jsx-runtime": "ReactJSXRuntime",
+	"react-dom/client": "ReactDOM",
 	// WordPress dependencies
 	"@wordpress/admin-ui": "wp.adminUi",
 	"@wordpress/dataviews": "wp.dataviews",
