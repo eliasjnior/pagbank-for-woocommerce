@@ -1076,7 +1076,7 @@ class ApiHelpers {
 				return $refund;
 			}
 
-			if ( $refund['status'] === 'CANCELED' ) {
+			if ( self::is_refund_successful( $refund, $amount ) ) {
 				return true;
 			}
 
@@ -1084,6 +1084,28 @@ class ApiHelpers {
 		} catch ( Exception $ex ) {
 			return new WP_Error( 'error', __( 'Houve um erro ao tentar realizar o reembolso.', 'pagbank-for-woocommerce' ) );
 		}
+	}
+
+	/**
+	 * Whether a charge cancel response confirms the requested refund.
+	 *
+	 * A partial refund keeps the charge PAID, so the cumulative `summary.refunded` is checked too.
+	 *
+	 * @param mixed $charge Decoded charge returned by the cancel endpoint.
+	 * @param float $amount Requested refund amount.
+	 */
+	public static function is_refund_successful( $charge, float $amount ): bool {
+		if ( ! is_array( $charge ) ) {
+			return false;
+		}
+
+		if ( ( $charge['status'] ?? '' ) === 'CANCELED' ) {
+			return true;
+		}
+
+		$refunded = $charge['amount']['summary']['refunded'] ?? null;
+
+		return is_numeric( $refunded ) && (int) $refunded >= Helpers::format_money_cents( $amount );
 	}
 
 	/**

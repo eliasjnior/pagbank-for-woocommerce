@@ -348,6 +348,41 @@ class ApiHelpersTest extends TestCase {
 	}
 
 	/**
+	 * A partial refund keeps the charge PAID; only the refunded summary proves it went through.
+	 *
+	 * @dataProvider refund_success_provider
+	 */
+	public function test_is_refund_successful( $charge, float $amount, bool $expected ): void {
+		$this->assertSame( $expected, ApiHelpers::is_refund_successful( $charge, $amount ) );
+	}
+
+	public function refund_success_provider(): array {
+		$charge = static function ( string $status, int $refunded ): array {
+			return array(
+				'status' => $status,
+				'amount' => array(
+					'value'   => 1000,
+					'summary' => array(
+						'total'    => 1000,
+						'paid'     => 1000,
+						'refunded' => $refunded,
+					),
+				),
+			);
+		};
+
+		return array(
+			'full refund'                       => array( $charge( 'CANCELED', 1000 ), 10.00, true ),
+			'partial refund'                    => array( $charge( 'PAID', 500 ), 5.00, true ),
+			'second partial refund, cumulative' => array( $charge( 'PAID', 800 ), 3.00, true ),
+			'refunded below requested'          => array( $charge( 'PAID', 300 ), 5.00, false ),
+			'nothing refunded'                  => array( $charge( 'PAID', 0 ), 5.00, false ),
+			'missing summary'                   => array( array( 'status' => 'PAID' ), 5.00, false ),
+			'not an array'                      => array( null, 5.00, false ),
+		);
+	}
+
+	/**
 	 * The production response for a refund the account balance cannot cover.
 	 */
 	public function test_get_refund_error_message_explains_missing_balance(): void {
