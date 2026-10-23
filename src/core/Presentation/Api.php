@@ -480,7 +480,7 @@ class Api {
 		$this->log_api_response( $response_code, $response_body );
 
 		if ( 201 !== $response_code ) {
-			return new WP_Error( 'pagbank_charge_refund_failed', 'PagBank charge refund failed', $decoded_response_body );
+			return new WP_Error( 'pagbank_charge_refund_failed', ApiHelpers::get_refund_error_message( $decoded_response_body ), $decoded_response_body );
 		}
 
 		return $decoded_response_body;
