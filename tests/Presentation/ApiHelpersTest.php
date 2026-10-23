@@ -346,4 +346,73 @@ class ApiHelpersTest extends TestCase {
 			),
 		);
 	}
+
+	/**
+	 * The production response for a refund the account balance cannot cover.
+	 */
+	public function test_get_refund_error_message_explains_missing_balance(): void {
+		$message = ApiHelpers::get_refund_error_message(
+			array(
+				'error_messages' => array(
+					array(
+						'code'        => '40008',
+						'message'     => 'refund_temporarily_unavailable',
+						'description' => 'Insufficient balance to refund transaction.',
+						'error'       => 'refund_temporarily_unavailable',
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString( 'saldo disponível', $message );
+		$this->assertStringContainsString( 'painel do PagBank', $message );
+	}
+
+	public function test_get_refund_error_message_keeps_details_of_other_temporary_failures(): void {
+		$message = ApiHelpers::get_refund_error_message(
+			array(
+				'error_messages' => array(
+					array(
+						'code'        => '40008',
+						'description' => 'Transaction is not found.',
+						'error'       => 'refund_temporarily_unavailable',
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString( 'temporariamente indisponível', $message );
+		$this->assertStringContainsString( 'Transaction is not found. (código 40008)', $message );
+	}
+
+	public function test_get_refund_error_message_includes_unknown_error_details(): void {
+		$message = ApiHelpers::get_refund_error_message(
+			array(
+				'error_messages' => array(
+					array(
+						'code'        => '40002',
+						'description' => '<b>invalid</b> amount',
+						'error'       => 'invalid_parameter',
+					),
+				),
+			)
+		);
+
+		$this->assertSame( 'O PagBank recusou o reembolso: invalid amount (código 40002)', $message );
+	}
+
+	/**
+	 * @dataProvider refund_error_without_details_provider
+	 */
+	public function test_get_refund_error_message_falls_back_without_details( $body ): void {
+		$this->assertSame( 'Houve um erro ao tentar realizar o reembolso.', ApiHelpers::get_refund_error_message( $body ) );
+	}
+
+	public function refund_error_without_details_provider(): array {
+		return array(
+			'null body'            => array( null ),
+			'html body'            => array( '<html>Bad Gateway</html>' ),
+			'empty error_messages' => array( array( 'error_messages' => array() ) ),
+		);
+	}
 }

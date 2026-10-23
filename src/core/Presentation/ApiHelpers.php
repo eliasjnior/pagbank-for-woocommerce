@@ -1085,4 +1085,52 @@ class ApiHelpers {
 			return new WP_Error( 'error', __( 'Houve um erro ao tentar realizar o reembolso.', 'pagbank-for-woocommerce' ) );
 		}
 	}
+
+	/**
+	 * Build the admin-facing message for a refund declined by PagBank.
+	 *
+	 * @param mixed $response_body Decoded error response.
+	 */
+	public static function get_refund_error_message( $response_body ): string {
+		$error = is_array( $response_body ) && isset( $response_body['error_messages'][0] ) && is_array( $response_body['error_messages'][0] )
+			? $response_body['error_messages'][0]
+			: array();
+
+		$code        = sanitize_text_field( (string) ( $error['code'] ?? '' ) );
+		$reason      = sanitize_text_field( (string) ( $error['error'] ?? $error['message'] ?? '' ) );
+		$description = sanitize_text_field( (string) ( $error['description'] ?? '' ) );
+		$details     = '' !== $description ? $description : $reason;
+
+		if ( '' !== $code ) {
+			/* translators: 1: error description from PagBank, 2: PagBank error code */
+			$details = trim( sprintf( __( '%1$s (código %2$s)', 'pagbank-for-woocommerce' ), $details, $code ) );
+		}
+
+		if ( 'refund_temporarily_unavailable' === $reason || '40008' === $code ) {
+			// PagBank refunds from the available balance; amounts not yet released by the receiving plan are not there.
+			if ( false !== stripos( $description, 'balance' ) ) {
+				return implode(
+					' ',
+					array(
+						__( 'O PagBank recusou o reembolso porque a conta ainda não tem saldo disponível suficiente.', 'pagbank-for-woocommerce' ),
+						__( 'Isso costuma acontecer quando o valor da venda ainda não foi liberado pelo plano de recebimento da conta.', 'pagbank-for-woocommerce' ),
+						__( 'Tente novamente após a liberação ou faça o reembolso pelo painel do PagBank.', 'pagbank-for-woocommerce' ),
+					)
+				);
+			}
+
+			return sprintf(
+				/* translators: %s: error description and code from PagBank */
+				__( 'O reembolso está temporariamente indisponível no PagBank. Tente novamente mais tarde ou faça o reembolso pelo painel do PagBank. Detalhes: %s', 'pagbank-for-woocommerce' ),
+				$details
+			);
+		}
+
+		if ( '' === $details ) {
+			return __( 'Houve um erro ao tentar realizar o reembolso.', 'pagbank-for-woocommerce' );
+		}
+
+		/* translators: %s: error description and code from PagBank */
+		return sprintf( __( 'O PagBank recusou o reembolso: %s', 'pagbank-for-woocommerce' ), $details );
+	}
 }
