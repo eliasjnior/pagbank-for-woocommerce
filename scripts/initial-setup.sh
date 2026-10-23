@@ -116,3 +116,14 @@ for gateway in $(wp wc payment_gateway list --user=wordpress --field=id | grep '
 done
 
 echo "Setup complete: $WP_URL (wordpress / wordpress)"
+
+if [ "${PAGBANK_WEBHOOK_TUNNEL:-1}" != 0 ]; then
+	for _ in $(seq 30); do
+		if webhook_url=$(./scripts/tunnel-url.sh 2>/dev/null); then
+			echo "PagBank webhooks: $webhook_url"
+			exit 0
+		fi
+		sleep 1
+	done
+	echo "The webhook tunnel is not up yet; check it later with pnpm tunnel:url."
+fi

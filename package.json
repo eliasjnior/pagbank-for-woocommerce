@@ -28,7 +28,8 @@
 		"make:pot": "./scripts/make-pot.sh",
 		"wp": "docker compose exec -u www-data wordpress wp",
 		"pagbank:save-credentials": "npx tsx scripts/pagbank-credentials.ts",
-		"worktree:env": "npx tsx scripts/worktree-env.ts"
+		"worktree:env": "npx tsx scripts/worktree-env.ts",
+		"tunnel:url": "./scripts/tunnel-url.sh"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.15",

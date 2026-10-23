@@ -1,0 +1,34 @@
+# The only door the quick tunnel opens into the stack: the dev site's admin is wordpress/wordpress,
+# so anything but a PagBank webhook POST is refused here.
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	log {
+		output stdout
+		format console
+	}
+
+	# The whole request URI, compared exactly: `path` would also let through other casings, and a
+	# query string could steer WordPress' routing. PagBank sends neither.
+	@webhook {
+		method POST
+		expression {http.request.uri} == '/wc-api/pagbank_woocommerce_handler'
+	}
+
+	handle @webhook {
+		request_body {
+			max_size 1MB
+		}
+		# WordPress expects its own host and port, not the trycloudflare.com one.
+		reverse_proxy {$WP_HOST}:{$WP_HTTP_PORT} {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	handle {
+		respond 404
+	}
+}
