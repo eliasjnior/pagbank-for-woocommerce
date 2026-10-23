@@ -30,10 +30,12 @@ git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r d; do
     wp=$(get WP_URL) pma=$(get PHPMYADMIN_PORT) mail=$(get MAILPIT_PORT)
   fi
   name=$(basename "$d" | sed "s/^$repo\\.//")
+  # PAGBANK_WEBHOOK_SITE_URL, which the webhook tunnel keeps current while the stack runs.
+  tunnel=$(sed -n "s/.*'PAGBANK_WEBHOOK_SITE_URL', *'\\([^']*\\)'.*/\\1/p" "$d/wp/wp-config.php" 2>/dev/null)
   if [ -n "$wp" ]; then
-    echo "$name|$wp|http://localhost:$pma|http://localhost:$mail"
+    echo "$name|$wp|http://localhost:$pma|http://localhost:$mail|${tunnel:--}"
   else
-    echo "$name|(no ports; run pnpm worktree:env)||"
+    echo "$name|(no ports; run pnpm worktree:env)|||"
   fi
-done | (echo "WORKTREE|WORDPRESS|PHPMYADMIN|MAILPIT"; cat) | column -t -s '|'
+done | (echo "WORKTREE|WORDPRESS|PHPMYADMIN|MAILPIT|WEBHOOKS"; cat) | column -t -s '|'
 """

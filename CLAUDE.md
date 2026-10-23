@@ -36,6 +36,7 @@ Access the development site at http://wordpress.localhost (`wordpress` / `wordpr
 - WordPress: http://wordpress.localhost
 - PHPMyAdmin: http://localhost:8080
 - Mailpit (Email testing): http://localhost:8025
+- PagBank webhooks: a public `*.trycloudflare.com` URL that changes on every start; `pnpm tunnel:url` prints it
 
 **Worktrees:** those URLs belong to the main checkout. A worktree runs its own stack (Compose project, `wp/`, database volume) on the ports `pnpm worktree:env` reserved in its `.env`: read `WP_URL`, `PHPMYADMIN_PORT` and `MAILPIT_PORT` from there (`wt links` lists them for every worktree), never assume port 80, and only run `docker compose` from the worktree's own directory so you don't stop or reset another one's stack. `pnpm run setup` writes the `.env` itself; run `pnpm worktree:env` before `docker compose up` if you start the stack first.
 
@@ -306,3 +307,4 @@ My Account address pages: WooCommerce adds every address-location Blocks field t
 - Plugin mounted as volume for hot-reload
 - PHP settings in `docker/wordpress/php.ini`; Apache vhosts in `docker/wordpress/apache.conf` and `apache-ports.conf`, which listen inside the container on the published ports so loopback requests to `WP_URL` work
 - `mail()` goes to Mailpit; the WP-CLI download cache in `~/.wp-cli/cache` is shared by every worktree
+- PagBank webhooks arrive through a Cloudflare quick tunnel (`webhook-tunnel`, `*.trycloudflare.com`) that only reaches the `webhook-proxy` Caddy service, which forwards exactly `POST /wc-api/pagbank_woocommerce_handler` (no query string) to WordPress with the `WP_HOST:WP_HTTP_PORT` Host header and answers 404 to the rest; never point the tunnel at WordPress itself, the admin is `wordpress`/`wordpress`. `webhook-url` (`docker/webhook-tunnel/sync-url.sh`) polls cloudflared's `/ready` and `/quicktunnel` metrics, writes `PAGBANK_WEBHOOK_SITE_URL` to `wp-config.php` and deletes it when the tunnel stops. `pnpm tunnel:url` prints the webhook URL, `docker compose logs webhook-proxy` shows the requests, the `pagbank_webhook` WooCommerce log shows how they were handled, and `PAGBANK_WEBHOOK_TUNNEL=0` leaves the three services out

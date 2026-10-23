@@ -52,6 +52,18 @@ pnpm pagbank:save-credentials
 
 Every setup, in any worktree, loads the sandbox and production connections from there, so no worktree needs a new OAuth. A new site starts with every PagBank gateway enabled on sandbox, even when production is connected too. Run the command again whenever you reconnect.
 
+### PagBank webhooks
+
+The stack gets a public HTTPS address for PagBank's notifications from a [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/), with no account needed. The tunnel only reaches a Caddy proxy (`docker/webhook-tunnel/Caddyfile`) that forwards `POST /wc-api/pagbank_woocommerce_handler` to WordPress and answers 404 to everything else, so the admin and the rest of the site stay private. The address changes on every start; the `webhook-url` service writes it to `PAGBANK_WEBHOOK_SITE_URL` in `wp-config.php` and removes it when the tunnel stops, so new orders always carry a live notification URL.
+
+```bash
+pnpm tunnel:url                                     # current webhook URL; the setup prints it too
+docker compose logs -f webhook-proxy                # every request that came through the tunnel
+PAGBANK_WEBHOOK_TUNNEL=0 docker compose up -d       # run without the tunnel (or set it in .env)
+```
+
+What the plugin did with each webhook is logged under the `pagbank_webhook` source in WooCommerce > Status > Logs. Quick tunnels have no uptime guarantee, so an order created before a restart keeps the old, dead URL.
+
 ### Parallel worktrees
 
 Each git worktree runs its own stack, with its own WordPress in `wp/`, database volume and ports, so several branches (or several AI agents) work at once without touching each other. `pnpm worktree:env`, which the setup runs first, reserves a free slot of host ports and writes them to the worktree's `.env`. WordPress is then served at `http://wordpress-<worktree>.localhost:<port>`; phpMyAdmin and Mailpit are on `localhost` at the ports in `.env`. The main checkout reserves nothing and keeps the URLs above.
@@ -68,7 +80,7 @@ With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` prepares each worktre
 
 - `wt switch --create feat/my-branch` copies `node_modules/`, `vendor/` and `certs/` from the main checkout (`.worktreeinclude`) and reserves the ports; it starts nothing
 - `wt list` shows each worktree's WordPress URL in its `url` column, dimmed while the stack is stopped
-- `wt links` lists every worktree's WordPress, phpMyAdmin and Mailpit links
+- `wt links` lists every worktree's WordPress, phpMyAdmin and Mailpit links and its webhook URL
 - `wt remove` stops the stack and deletes its database volume
 
 Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install` in the new worktree; `pnpm run setup` reserves the ports itself.
@@ -90,6 +102,7 @@ Keep a worktree's `.env` once WordPress is installed, since its URL is stored in
 | `pnpm check:version` | Checks that every version declaration matches `package.json` |
 | `pnpm export` | Builds the production zip into `build/` and verifies its contents |
 | `pnpm wp <command>` | Runs WP-CLI against the development site |
+| `pnpm tunnel:url` | Prints the public URL PagBank sends webhooks to |
 
 PHP tooling and Composer run inside Docker, so no local PHP install is needed.
 
