@@ -289,6 +289,9 @@ class PixPaymentGateway extends WC_Payment_Gateway {
 
 		$order->update_meta_data( '_pagbank_order_id', (string) ( $response['id'] ?? '' ) );
 		$order->update_meta_data( '_pagbank_charge_id', (string) ( $charge['id'] ?? '' ) );
+		if ( isset( $charge['amount']['value'] ) && is_int( $charge['amount']['value'] ) ) {
+			$order->update_meta_data( '_pagbank_charge_amount', $charge['amount']['value'] );
+		}
 
 		$expiration_date = (string) ( $charge['payment_method']['pix']['expiration_date'] ?? '' );
 

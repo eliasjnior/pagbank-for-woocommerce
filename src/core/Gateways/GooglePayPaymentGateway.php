@@ -246,6 +246,9 @@ class GooglePayPaymentGateway extends WC_Payment_Gateway {
 
 		$order->update_meta_data( '_pagbank_order_id', $response['id'] );
 		$order->update_meta_data( '_pagbank_charge_id', $charge['id'] );
+		if ( isset( $charge['amount']['value'] ) && is_int( $charge['amount']['value'] ) ) {
+			$order->update_meta_data( '_pagbank_charge_amount', $charge['amount']['value'] );
+		}
 		$order->update_meta_data( '_pagbank_environment', $this->environment );
 		$order->update_meta_data( '_pagbank_payment_method', 'google_pay' );
 
