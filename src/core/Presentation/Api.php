@@ -601,6 +601,53 @@ class Api {
 	}
 
 	/**
+	 * Get a single order by ID.
+	 *
+	 * Fallback for the webhook handler when get_charge() fails: the PagBank sandbox
+	 * answers GET /charges/{id} with a 400 HTML page while GET /orders/{id} works.
+	 *
+	 * @param string      $order_id     The PagBank order ID.
+	 * @param string|null $access_token Optional override; defaults to the configured connect token.
+	 *
+	 * @return array|WP_Error Decoded order payload, or WP_Error on non-200 / network failure.
+	 */
+	public function get_order( string $order_id, ?string $access_token = null ) {
+		$url = $this->get_api_url( 'orders/' . rawurlencode( $order_id ) );
+
+		$headers = array(
+			'Authorization' => $access_token ?? $this->connect->get_access_token(),
+			'Content-Type'  => 'application/json',
+		);
+
+		$this->log_api_request( 'GET', $url, null, $headers );
+
+		$args = array(
+			'method'  => 'GET',
+			'headers' => $headers,
+		);
+
+		$response = $this->request( $url, $args );
+
+		if ( is_wp_error( $response ) ) {
+			$this->log_api_request_error( $response );
+
+			return $response;
+		}
+
+		$response_code         = wp_remote_retrieve_response_code( $response );
+		$response_body         = wp_remote_retrieve_body( $response );
+		$decoded_response_body = json_decode( $response_body, true );
+
+		$this->log_api_response( $response_code, $response_body );
+
+		if ( 200 !== $response_code || ! is_array( $decoded_response_body ) ) {
+			return new WP_Error( 'pagbank_get_order_failed', 'PagBank get order failed', $decoded_response_body );
+		}
+
+		return $decoded_response_body;
+	}
+
+	/**
 	 * Get the 3DS SDK API URL.
 	 *
 	 * @param string $path The path to append to the API URL.

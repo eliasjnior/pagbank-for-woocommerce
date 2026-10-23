@@ -18,7 +18,8 @@ use WooCommerce;
  * Class WebhookHandler.
  *
  * Webhook bodies are not trusted. Each event is treated as a hint to reconcile;
- * the canonical status is fetched from the PagBank API via Api::get_charge().
+ * the canonical status is fetched from the PagBank API via Api::get_charge(),
+ * falling back to Api::get_order() when the charge lookup fails.
  */
 class WebhookHandler {
 
@@ -202,6 +203,61 @@ class WebhookHandler {
 	}
 
 	/**
+	 * Pick the charge from a PagBank order returned by Api::get_order(), checking it belongs to the WC order.
+	 *
+	 * @param array  $pagbank_order    Decoded GET /orders/{id} response.
+	 * @param string $pagbank_order_id PagBank order id that was requested.
+	 * @param string $reference_id     Raw reference_id that passed the webhook signature check.
+	 * @param string $charge_id        Expected charge id.
+	 * @param int    $amount_cents     WC order total in cents.
+	 * @param string $currency         WC order currency.
+	 * @return array|string The charge, or the reason it was rejected.
+	 */
+	public static function verify_order_charge(
+		array $pagbank_order,
+		string $pagbank_order_id,
+		string $reference_id,
+		string $charge_id,
+		int $amount_cents,
+		string $currency
+	) {
+		if ( ( $pagbank_order['id'] ?? null ) !== $pagbank_order_id ) {
+			return 'order_id_mismatch';
+		}
+
+		if ( ( $pagbank_order['reference_id'] ?? null ) !== $reference_id ) {
+			return 'reference_id_mismatch';
+		}
+
+		$charge = null;
+
+		foreach ( (array) ( $pagbank_order['charges'] ?? array() ) as $candidate ) {
+			if ( is_array( $candidate ) && ( $candidate['id'] ?? null ) === $charge_id ) {
+				$charge = $candidate;
+				break;
+			}
+		}
+
+		if ( null === $charge ) {
+			return 'charge_not_found';
+		}
+
+		if ( isset( $charge['reference_id'] ) && $charge['reference_id'] !== $reference_id ) {
+			return 'charge_reference_id_mismatch';
+		}
+
+		if ( ( $charge['amount']['value'] ?? null ) !== $amount_cents ) {
+			return 'amount_mismatch';
+		}
+
+		if ( ( $charge['amount']['currency'] ?? null ) !== $currency ) {
+			return 'currency_mismatch';
+		}
+
+		return $charge;
+	}
+
+	/**
 	 * Log.
 	 *
 	 * @param string $message Message.
@@ -214,6 +270,72 @@ class WebhookHandler {
 
 		$log_context = array_merge( array( 'source' => 'pagbank_webhook' ), $context );
 		$this->logger->info( $message, $log_context );
+	}
+
+	/**
+	 * Fetch the charge through GET /orders/{id} and check it against the WC order.
+	 *
+	 * @param Api       $api          API client.
+	 * @param \WC_Order $order        WC order resolved from the webhook.
+	 * @param array     $payload      Decoded webhook payload.
+	 * @param string    $reference_id Raw reference_id that passed the signature check.
+	 * @param string    $charge_id    Expected charge id.
+	 */
+	private function get_charge_from_order(
+		Api $api,
+		\WC_Order $order,
+		array $payload,
+		string $reference_id,
+		string $charge_id
+	): ?array {
+		$pagbank_order_id = (string) $order->get_meta( '_pagbank_order_id' );
+		$payload_order_id = isset( $payload['id'] ) && is_string( $payload['id'] ) ? $payload['id'] : '';
+
+		// Checkout PagBank stores no order id; the payload id is safe because the response is re-validated.
+		if ( '' === $pagbank_order_id && 1 === preg_match( '/^ORDE_[A-Za-z0-9-]+$/', $payload_order_id ) ) {
+			$pagbank_order_id = $payload_order_id;
+		}
+
+		$context = array(
+			'order_id'         => $order->get_id(),
+			'pagbank_order_id' => $pagbank_order_id,
+			'charge_id'        => $charge_id,
+		);
+
+		if ( '' === $pagbank_order_id ) {
+			$this->log( 'Webhook verification failed: no PagBank order id to fall back to', $context );
+
+			return null;
+		}
+
+		$pagbank_order = $api->get_order( $pagbank_order_id );
+
+		if ( is_wp_error( $pagbank_order ) ) {
+			$context['error_code'] = $pagbank_order->get_error_code();
+			$this->log( 'Webhook verification failed: could not fetch order from PagBank API', $context );
+
+			return null;
+		}
+
+		$charge = self::verify_order_charge(
+			$pagbank_order,
+			$pagbank_order_id,
+			$reference_id,
+			$charge_id,
+			Helpers::format_money_cents( (float) $order->get_total() ),
+			$order->get_currency()
+		);
+
+		if ( is_string( $charge ) ) {
+			$context['reason'] = $charge;
+			$this->log( 'Webhook verification failed: PagBank order does not match the WC order', $context );
+
+			return null;
+		}
+
+		$this->log( 'Webhook verification: charge verified via GET /orders', $context );
+
+		return $charge;
 	}
 
 	/**
@@ -354,13 +476,24 @@ class WebhookHandler {
 
 			if ( is_wp_error( $charge ) ) {
 				$this->log(
-					'Webhook verification failed: could not fetch charge from PagBank API',
+					'Webhook verification: could not fetch charge from PagBank API, falling back to the order',
 					array(
 						'order_id'   => $order_id,
 						'charge_id'  => $charge_id,
 						'error_code' => $charge->get_error_code(),
 					)
 				);
+
+				$charge = $this->get_charge_from_order(
+					$api,
+					$order,
+					$payload,
+					(string) $raw_reference_id,
+					$charge_id
+				);
+			}
+
+			if ( null === $charge ) {
 				// Fail-closed: 5xx tells PagBank to retry the webhook later.
 				wp_send_json_error(
 					array(
