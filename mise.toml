@@ -1,0 +1,3 @@
+# Toolchain for this repo, installed and activated by mise (https://mise.jdx.dev).
+[tools]
+node = "24"
