@@ -280,6 +280,7 @@ class WcfmIntegration {
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- ignore for $WCFMmp
 			$WCFMmp->wcfmmp_withdraw->wcfmmp_update_withdrawal_meta( $withdrawal_id, 'currency', $order->get_currency() );
 
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WCFM hook.
 			do_action( 'wcfmmp_withdrawal_request_approved', $withdrawal_id );
 		}
 	}

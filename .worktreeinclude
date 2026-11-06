@@ -1,0 +1,4 @@
+# Gitignored files that new worktrees copy from the main checkout (`wt step copy-ignored`)
+node_modules/
+vendor/
+certs/

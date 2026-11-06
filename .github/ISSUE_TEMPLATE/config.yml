@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Vulnerabilidade de segurança
+    url: https://github.com/eliasjnior/pagbank-for-woocommerce/security/advisories/new
+    about: Reporte falhas de segurança de forma privada, nunca em uma issue pública.
+  - name: Dúvidas de uso e configuração
+    url: https://wordpress.org/support/plugin/pagbank-for-woocommerce/
+    about: Perguntas sobre instalação e configuração do plugin no fórum do WordPress.org.
+  - name: Conta, cobranças e repasses no PagBank
+    url: https://www.pagbank.com.br/atendimento
+    about: Aprovação de conta, análise de pagamentos, estornos e saldo são tratados pelo atendimento do PagBank.

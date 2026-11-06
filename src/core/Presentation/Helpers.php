@@ -123,6 +123,7 @@ class Helpers {
 	 * @return bool If WooCommerce is activated.
 	 */
 	public static function is_woocommerce_activated(): bool {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 		return class_exists( 'WooCommerce' ) || in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ), true );
 	}
 
@@ -132,6 +133,7 @@ class Helpers {
 	 * @return bool If WCFM is activated.
 	 */
 	public static function is_wcfm_activated(): bool {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 		return class_exists( 'WCFM' ) || in_array( 'wc-frontend-manager/wc_frontend_manager.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ), true );
 	}
 

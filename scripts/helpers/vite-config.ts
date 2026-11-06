@@ -6,12 +6,18 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const rootDir = resolve(__dirname, "../..");
 
+const browserTarget = ["chrome107", "edge107", "firefox104", "safari16"];
+
 export const externals: Record<string, string> = {
 	// jQuery (use WooCommerce's global instance)
 	jquery: "jQuery",
 	// React dependencies
 	react: "React",
 	"react-dom": "ReactDOM",
+	// Rolldown leaves a bundled CommonJS module's require() of an external as is, so the
+	// subpaths that require React must be externals too.
+	"react/jsx-runtime": "ReactJSXRuntime",
+	"react-dom/client": "ReactDOM",
 	// WordPress dependencies
 	"@wordpress/admin-ui": "wp.adminUi",
 	"@wordpress/dataviews": "wp.dataviews",
@@ -86,6 +92,7 @@ export function getEntryBuildConfig(name: string, entry: string, options: BuildC
 			"process.env.NODE_ENV": isDev ? '"development"' : '"production"',
 		},
 		build: {
+			target: browserTarget,
 			emptyOutDir: false,
 			// Use 'hidden' sourcemaps in dev to avoid warnings from node_modules without sourcemaps
 			sourcemap: isDev ? "hidden" : false,
@@ -107,11 +114,12 @@ export function getEntryBuildConfig(name: string, entry: string, options: BuildC
 				formats: ["iife"] as const,
 				fileName: () => `${name}.js`,
 			},
-			rollupOptions: {
+			rolldownOptions: {
 				external: Object.keys(externals),
 				output: {
 					globals: externals,
 					dir: resolve(rootDir, "dist"),
+					comments: { jsdoc: true },
 					// Suppress sourcemap warnings for node_modules
 					sourcemapIgnoreList: (relativeSourcePath) => {
 						return relativeSourcePath.includes("node_modules");
@@ -156,12 +164,13 @@ export function getScssBuildConfig(scssFile: string, options: BuildConfigOptions
 		configFile: false as const,
 		root: rootDir,
 		build: {
+			cssTarget: browserTarget,
 			emptyOutDir: false,
 			sourcemap: isDev,
 			minify: !isDev,
 			watch: isDev ? {} : null,
-			cssCodeSplit: false,
-			rollupOptions: {
+			cssCodeSplit: true,
+			rolldownOptions: {
 				input: resolve(rootDir, scssFile),
 				output: {
 					dir: resolve(rootDir, "dist/styles"),

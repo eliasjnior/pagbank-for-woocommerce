@@ -215,9 +215,9 @@ declare module "@woocommerce/types" {
 
 declare module "@woocommerce/blocks-registry" {
 	import type {
-		PaymentMethodConfiguration,
-		ExpressPaymentMethodConfiguration,
 		CanMakePaymentExtensionCallback,
+		ExpressPaymentMethodConfiguration,
+		PaymentMethodConfiguration,
 	} from "@woocommerce/types";
 
 	export function registerPaymentMethod(options: PaymentMethodConfiguration): void;

@@ -27,6 +27,12 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	function sanitize_text_field( $str ) {
+		return trim( (string) preg_replace( '/\s+/', ' ', strip_tags( (string) $str ) ) );
+	}
+}
+
 // Minimal WooCommerce/WordPress surface, so the tests can call the email hook
 // callbacks for real instead of only testing the helpers.
 if ( ! class_exists( 'WC_Order' ) ) {

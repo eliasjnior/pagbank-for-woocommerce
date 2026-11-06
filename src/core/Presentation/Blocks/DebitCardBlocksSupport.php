@@ -75,7 +75,15 @@ final class DebitCardBlocksSupport extends AbstractPaymentMethodType {
 		wp_register_script(
 			'pagbank-debit-card-blocks',
 			plugins_url( 'dist/public/blocks/checkout-debit-card.js', PAGBANK_WOOCOMMERCE_FILE_PATH ),
-			array( 'react', 'wc-blocks-registry', 'wc-settings', 'wp-html-entities', 'wp-element', 'pagbank-sdk' ),
+			array(
+				'react',
+				'react-jsx-runtime',
+				'wc-blocks-registry',
+				'wc-settings',
+				'wp-html-entities',
+				'wp-element',
+				'pagbank-sdk',
+			),
 			PAGBANK_WOOCOMMERCE_VERSION,
 			true
 		);
