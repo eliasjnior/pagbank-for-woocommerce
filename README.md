@@ -37,7 +37,7 @@ pnpm run setup
 | Service | URL |
 | --- | --- |
 | WordPress | http://wordpress.localhost (user `wordpress`, password `wordpress`) |
-| phpMyAdmin | http://localhost:8080 |
+| phpMyAdmin | http://localhost:8081 |
 | Mailpit | http://localhost:8025 (every e-mail the site sends) |
 
 The repository is mounted as `wp-content/plugins/pagbank-for-woocommerce`, so PHP changes apply on reload. HTTPS is served on port 443 with a self-signed certificate unless you place your own `.crt` and `.key` in `certs/`. The WordPress image is built from `docker/wordpress/`, with WP-CLI inside it and no Xdebug.
@@ -85,7 +85,9 @@ With [Worktrunk](https://worktrunk.dev), `.config/wt.toml` prepares each worktre
 
 Approve the project commands once with `wt config approvals add`, so worktrees created without a terminal, such as by an AI agent, run them too. Without Worktrunk, run `pnpm install` in the new worktree; `pnpm run setup` reserves the ports itself.
 
-Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks a new slot.
+Each worktree gets a block of ten ports from 20010 to 20999, starting at a slot derived from its path and moving on when those ports are busy or taken by another worktree: WordPress HTTP and HTTPS at the first two, then phpMyAdmin, Mailpit and Mailpit's SMTP. To pin the block instead, for example when something else on your machine uses that range, set `PAGBANK_PORT_BASE` to its first port (`PAGBANK_PORT_BASE=30000 pnpm worktree:env --force`).
+
+Keep a worktree's `.env` once WordPress is installed, since its URL is stored in the database; `pnpm worktree:env --force` picks new ports.
 
 ## Commands
 
@@ -127,7 +129,7 @@ Every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml). 
 - Conventional Commits on every commit and on the PR title (the squash commit on `main`)
 - A package build that checks version consistency, fails when the `.pot` is outdated, and verifies that the zip has every asset the PHP enqueues and nothing from development
 - [Plugin Check](https://wordpress.org/plugins/plugin-check/), the WordPress.org review tool, on the built zip: errors fail the job, warnings are annotated
-- A smoke test that installs the zip with WooCommerce on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and on the latest one, then checks that every gateway registers, the storefront and the gateway settings screens render, and the plugin logs no PHP errors. `scripts/smoke-test.sh` runs the same checks against any local wp-env site
+- A smoke test that installs the zip with WooCommerce on the oldest supported stack (PHP 7.4, WordPress 6.7, WooCommerce 9.9) and on the latest one, then checks that every gateway registers, the storefront and the gateway settings screens render, and the plugin logs no PHP errors. `scripts/smoke-test.sh` runs the same checks against any local wp-env site (on `WP_ENV_PORT`, 8888 by default, or `BASE_URL`)
 
 The zip built for each PR is attached to the workflow run, so it can be installed on a test store.
 

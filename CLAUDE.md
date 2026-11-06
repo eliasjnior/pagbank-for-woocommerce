@@ -34,7 +34,7 @@ Access the development site at http://wordpress.localhost (`wordpress` / `wordpr
 
 **Development Services:**
 - WordPress: http://wordpress.localhost
-- PHPMyAdmin: http://localhost:8080
+- PHPMyAdmin: http://localhost:8081
 - Mailpit (Email testing): http://localhost:8025
 - PagBank webhooks: a public `*.trycloudflare.com` URL that changes on every start; `pnpm tunnel:url` prints it
 
@@ -303,7 +303,7 @@ My Account address pages: WooCommerce adds every address-location Blocks field t
 
 - WordPress runs on PHP 8.3 from the image in `docker/wordpress/` (WP-CLI and msmtp, no Xdebug); `pnpm wp` runs WP-CLI inside it as `www-data`
 - Development mode: `WP_ENVIRONMENT_TYPE=development`, `WP_DEBUG`, `WP_DEBUG_DISPLAY` and `SCRIPT_DEBUG` on, `WP_DEBUG_LOG` at `logs/debug.log`
-- Database: MariaDB; PHPMyAdmin on port 8080 (or `PHPMYADMIN_PORT` in a worktree)
+- Database: MariaDB; PHPMyAdmin on port 8081 (or `PHPMYADMIN_PORT` in a worktree)
 - Plugin mounted as volume for hot-reload
 - PHP settings in `docker/wordpress/php.ini`; Apache vhosts in `docker/wordpress/apache.conf` and `apache-ports.conf`, which listen inside the container on the published ports so loopback requests to `WP_URL` work
 - `mail()` goes to Mailpit; the WP-CLI download cache in `~/.wp-cli/cache` is shared by every worktree
