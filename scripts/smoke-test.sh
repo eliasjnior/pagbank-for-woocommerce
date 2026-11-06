@@ -3,7 +3,7 @@
 # Run it from the folder that holds the site's .wp-env.json.
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:8888}"
+BASE_URL="${BASE_URL:-http://localhost:${WP_ENV_PORT:-8888}}"
 GATEWAYS=(
 	pagbank_credit_card
 	pagbank_debit_card

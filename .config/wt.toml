@@ -25,7 +25,7 @@ repo=$(basename "$main")
 git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r d; do
   get() { sed -n "s/^$1=//p" "$d/.env" 2>/dev/null; }
   if [ "$d" = "$main" ]; then
-    wp=http://wordpress.localhost pma=8080 mail=8025
+    wp=http://wordpress.localhost pma=8081 mail=8025
   else
     wp=$(get WP_URL) pma=$(get PHPMYADMIN_PORT) mail=$(get MAILPIT_PORT)
   fi
