@@ -51,7 +51,7 @@ jobs:
       ui: ${{ steps.filter.outputs.ui }}
       plugin: ${{ steps.filter.outputs.plugin }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - id: filter
         env:
           EVENT: ${{ github.event_name }}
@@ -88,12 +88,12 @@ jobs:
     if: needs.changes.outputs.php == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-php
         with:
           tools: cs2pr
       # PHPCS skips files whose content and ruleset are unchanged since the cached run.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ runner.temp }}/phpcs.cache
           key: phpcs-${{ hashFiles('.phpcs.xml', 'composer.lock') }}-${{ github.sha }}
@@ -109,10 +109,10 @@ jobs:
     if: needs.changes.outputs.php == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-php
       # Result cache under PHPStan's default tmpDir (sys_get_temp_dir()/phpstan); it invalidates itself on config changes.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: /tmp/phpstan
           key: phpstan-${{ hashFiles('composer.lock') }}-${{ github.sha }}
@@ -130,7 +130,7 @@ jobs:
         # Every version the plugin header and composer.json accept.
         php: ["7.4", "8.0", "8.1", "8.2", "8.3"]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-php
         with:
           php-version: ${{ matrix.php }}
@@ -142,7 +142,7 @@ jobs:
     if: needs.changes.outputs.ui == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-node
       - run: pnpm exec biome ci src scripts
       - run: pnpm exec tsc
@@ -152,7 +152,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-node
@@ -175,7 +175,7 @@ jobs:
     outputs:
       zip: ${{ steps.zip.outputs.name }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-php
         with:
           composer-options: --no-dev --optimize-autoloader
@@ -209,7 +209,7 @@ jobs:
       - name: Verify zip contents
         run: pnpm exec tsx scripts/verify-export.ts
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           path: build/pagbank-for-woocommerce-*.zip
           archive: false
@@ -221,7 +221,7 @@ jobs:
     needs: package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ${{ needs.package.outputs.zip }}
           path: release
@@ -229,7 +229,7 @@ jobs:
       - run: unzip -q "release/$ZIP" -d "$RUNNER_TEMP/plugin"
         env:
           ZIP: ${{ needs.package.outputs.zip }}
-      - uses: WordPress/plugin-check-action@v1
+      - uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1
         with:
           build-dir: ${{ runner.temp }}/plugin/pagbank-for-woocommerce
           # The PR comment needs pull-requests: write, which the release workflow does not grant when it calls CI.
@@ -260,11 +260,11 @@ jobs:
       WP_ENV_VERSION: 12.0.0
       SITE: ${{ github.workspace }}/../site
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ${{ needs.package.outputs.zip }}
           path: release
