@@ -32,7 +32,7 @@ jobs:
           echo "::error::Releases are cut from ${{ github.event.repository.default_branch }}, not ${{ github.ref_name }}."
           exit 1
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
@@ -66,16 +66,16 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: pagbank-for-woocommerce-${{ needs.prepare.outputs.version }}.zip
           path: release
           skip-decompress: true
 
       # Lets anyone check the zip came from this workflow: gh attestation verify <zip> --repo <owner>/<repo>
-      - uses: actions/attest-build-provenance@v4
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: release/*.zip
 
