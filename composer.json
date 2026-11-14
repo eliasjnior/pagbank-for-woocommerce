@@ -31,7 +31,7 @@
         "php-stubs/woocommerce-stubs": "^10.7"
     },
     "require": {
-        "php": ">=7.4 <=8.3",
+        "php": "<=8.5",
         "jakeasmith/http_build_url": "^1.0.1",
         "giggsey/libphonenumber-for-php": "^8.13.55",
         "nesbot/carbon": "^2.73.0",
