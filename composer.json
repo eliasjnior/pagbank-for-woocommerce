@@ -21,7 +21,7 @@
         "unit": "./vendor/bin/phpunit --coverage-html build/coverage-report"
     },
     "require-dev": {
-        "squizlabs/php_codesniffer": "^3.13.5",
+        "squizlabs/php_codesniffer": "^4.0.0",
         "phpunit/phpunit": "^9.6.31",
         "wp-coding-standards/wpcs": "^3.3.0",
         "woocommerce/woocommerce-sniffs": "^1.0.1",
