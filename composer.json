@@ -28,7 +28,7 @@
         "slevomat/coding-standard": "^8.22",
         "phpstan/phpstan": "^2.1",
         "szepeviktor/phpstan-wordpress": "^2.0",
-        "php-stubs/woocommerce-stubs": "^10.7"
+        "php-stubs/woocommerce-stubs": "^11.0"
     },
     "require": {
         "php": ">=7.4 <=8.3",
