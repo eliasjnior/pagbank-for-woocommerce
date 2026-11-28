@@ -38,7 +38,7 @@
 		"@types/escape-html": "^1.0.4",
 		"@types/jquery": "^3.5.33",
 		"@types/jquery.blockui": "^0.0.33",
-		"@types/node": "^24.19.2",
+		"@types/node": "^26.0.0",
 		"@types/react": "^18.3.27",
 		"@types/react-dom": "^18.3.7",
 		"concurrently": "^10.0.6",
